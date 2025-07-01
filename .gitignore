@@ -1,0 +1,7 @@
+/data-in/*.txt
+/data-in/*.zip
+/data-in/*.nc
+/data-out/
+/node_modules/
+/target
+.DS_Store

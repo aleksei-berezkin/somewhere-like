@@ -1,0 +1,19 @@
+{
+  "name": "somewhere-like",
+  "version": "0.0.0",
+  "description": "Find a place with a similar climate",
+  "main": "index.js",
+  "scripts": {
+    "back": "cargo run -p backend",
+    "prep": "cargo run -p preprocessing",
+    "test": "cargo test"
+  },
+  "keywords": [
+    "world",
+    "cities",
+    "weather",
+    "climate"
+  ],
+  "author": "Aleksei Berezkin",
+  "license": "ISC"
+}
