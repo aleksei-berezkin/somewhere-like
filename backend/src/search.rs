@@ -1,8 +1,8 @@
-use std::{cell::RefCell, sync::Mutex};
+use std::cell::RefCell;
 use common::cities::City;
 use rayon::prelude::*;
 use thread_local::ThreadLocal;
-use backend::{intern::{InternedId, Interner}, jaro_winkler_vec, split_name_rest};
+use backend::{intern::{InternedId, Interner, InternerBuilder}, jaro_winkler_vec, split_name_rest};
 
 pub struct CitySearchData<'a> {
     pub search_items: Vec<CitySearchItem<'a>>,
@@ -21,10 +21,9 @@ pub struct CitySearchItem<'a> {
 
 pub fn make_search_data(cities: &Vec<City>) -> CitySearchData {
     let start = std::time::Instant::now();
-    let interner_mutex = Mutex::new(Interner::new());
+    let interner_builder = InternerBuilder::new();
     let intern_lowercase = |s: &str| {
-        let mut interner = interner_mutex.lock().unwrap();
-        interner.intern(s.to_lowercase().chars().collect())
+        interner_builder.intern(s.to_lowercase().chars().collect())
     };
 
     let search_items = cities.par_iter().enumerate()
@@ -47,7 +46,7 @@ pub fn make_search_data(cities: &Vec<City>) -> CitySearchData {
     eprintln!("Converted to search items in {} ms", start.elapsed().as_millis());
 
     CitySearchData {
-        interner: interner_mutex.into_inner().unwrap(),
+        interner: interner_builder.into_interner(),
         search_items
     }
 }
@@ -59,16 +58,16 @@ pub struct CitySearchQuery {
 
 pub fn make_search_query(query: &str) -> CitySearchQuery {
     let lowercase_query = query.trim().to_lowercase();
-    let mut interner = Interner::new();
+    let interner_builder = InternerBuilder::new();
     let name_rest_variants = split_name_rest(&lowercase_query).iter()
         .map(|(name, rest)| (
-            interner.intern(name.chars().collect()),
-            rest.map(|r| interner.intern(r.chars().collect()))
+            interner_builder.intern(name.chars().collect()),
+            rest.map(|r| interner_builder.intern(r.chars().collect()))
         ))
         .collect();
     CitySearchQuery {
         name_rest_variants,
-        interner
+        interner: interner_builder.into_interner(),
     }
 }
 
