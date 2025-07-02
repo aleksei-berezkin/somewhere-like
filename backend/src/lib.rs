@@ -127,27 +127,28 @@ pub fn jaro_vec<T: Eq>(a: &Vec<T>, b: &Vec<T>) -> f32 {
 
 /// Split the input into all possible combinations of the form "name rest".
 /// Order of variants starts from the smallest name.
-/// The last variant is always (input, "")
+/// The last variant is always (input, None), and it's the only case
+/// when None is returned.
 /// 
 /// ```rust
 /// use backend::split_name_rest;
-/// assert_eq!(split_name_rest(""), vec![("", "")]);
-/// assert_eq!(split_name_rest("ab"), vec![("ab", "")]);
-/// assert_eq!(split_name_rest("a b c"), vec![("a", "b c"), ("a b", "c"), ("a b c", "")]);
-/// assert_eq!(split_name_rest(";,a, ,b,;"), vec![(";,a", "b,;"), (";,a, ,b,;", "")]);
+/// assert_eq!(split_name_rest(""), vec![("", None)]);
+/// assert_eq!(split_name_rest("ab"), vec![("ab", None)]);
+/// assert_eq!(split_name_rest("a b c"), vec![("a", Some("b c")), ("a b", Some("c")), ("a b c", None)]);
+/// assert_eq!(split_name_rest(";,a, ,b,;"), vec![(";,a", Some("b,;")), (";,a, ,b,;", None)]);
 /// ```
-pub fn split_name_rest(input: &str) -> Vec<(&str, &str)> {
+pub fn split_name_rest(input: &str) -> Vec<(&str, Option<&str>)> {
     let delimiter = regex::Regex::new(r"[ ,;]+").unwrap();
     delimiter.find_iter(&input)
         .filter_map(|m| {
             let name = &input[..m.start()];
             let rest = &input[m.end()..];
             if name.len() > 0 && rest.len() > 0 {
-                Some((name, rest))
+                Some((name, Some(rest)))
             } else {
                 None
             }
         })
-        .chain(std::iter::once((input, "")))
+        .chain(std::iter::once((input, None)))
         .collect()
 }

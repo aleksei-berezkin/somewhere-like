@@ -53,7 +53,7 @@ pub fn make_search_data(cities: &Vec<City>) -> CitySearchData {
 }
 
 pub struct CitySearchQuery {
-    name_rest_variants: Vec<(InternedId, InternedId)>,
+    name_rest_variants: Vec<(InternedId, Option<InternedId>)>,
     interner: Interner,
 }
 
@@ -63,7 +63,7 @@ pub fn make_search_query(query: &str) -> CitySearchQuery {
     let name_rest_variants = split_name_rest(&lowercase_query).iter()
         .map(|(name, rest)| (
             interner.intern(name.chars().collect()),
-            interner.intern(rest.chars().collect())
+            rest.map(|r| interner.intern(r.chars().collect()))
         ))
         .collect();
     CitySearchQuery {
@@ -156,21 +156,36 @@ fn score_city<'a, 'cache>(
 
 fn score_city_impl<'a, 'cache>(
     city_name_index_and_name: (usize, &'a InternedId),
-    city_admin_unit: &'a Option<InternedId>,
+    city_admin_unit_maybe: &'a Option<InternedId>,
     city_country: &'a InternedId,
     city_population: u64,
-    query_name_and_rest: &'a (InternedId, InternedId),
+    query_name_and_rest: &'a (InternedId, Option<InternedId>),
     caches: &ThreadLocal<RefCell<Vec<f32>>>,
     city_interner: &'a Interner,
     query_interner: &'a Interner,
 ) -> f32 {
     let (city_name_index, city_name) = city_name_index_and_name;
-    let (query_name, query_rest) = query_name_and_rest;
+    let (query_name, query_rest_maybe) = query_name_and_rest;
 
-    let name_similarity = jaro_winkler_interned_cached(city_name, query_name, caches, city_interner, query_interner);
-    let admin_unit_similarity = city_admin_unit.as_ref()
-        .map_or(0.0, |admin_unit| jaro_winkler_interned_cached(admin_unit, query_rest, caches, city_interner, query_interner));
-    let country_similarity = jaro_winkler_interned_cached(city_country, query_rest, caches, city_interner, query_interner);
+    let name_similarity = jaro_winkler_cached(city_name, query_name, caches, city_interner, query_interner);
+    let (
+        admin_unit_similarity,
+        country_similarity
+    ) = if let Some(query_rest) = query_rest_maybe {
+        (
+            jaro_winkler_cached(city_country, query_rest, caches, city_interner, query_interner),
+            if let Some(city_admin_unit) = city_admin_unit_maybe {
+                jaro_winkler_cached(city_admin_unit, query_rest, caches, city_interner, query_interner)
+            } else {
+                0.0
+            },
+        )
+    } else {
+        (
+            0.0,
+            0.0,
+        )
+    };
 
     name_similarity
         + NAME_POSITION_WEIGHT * city_name_index as f32
@@ -184,7 +199,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 static JW_ENTERED_COUNT: AtomicUsize = AtomicUsize::new(0);
 static JW_COMPUTED_COUNT: AtomicUsize = AtomicUsize::new(0);
 
-fn jaro_winkler_interned_cached<'a>(
+fn jaro_winkler_cached<'a>(
     city_str: &'a InternedId,
     query_str: &'a InternedId,
     caches: &ThreadLocal<RefCell<Vec<f32>>>,
