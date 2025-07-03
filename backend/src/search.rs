@@ -82,7 +82,7 @@ pub struct CityScoredItem<'a> {
     country: &'a str,
 }
 
-pub fn search_cities<'a>(search_data: &'a CitySearchData<'a>, search_query: &'a CitySearchQuery) -> Vec<CityScoredItem<'a>> {
+pub fn search_cities<'a>(search_data: &'a CitySearchData<'a>, search_query: &CitySearchQuery) -> Vec<CityScoredItem<'a>> {
     let caches: ThreadLocal<RefCell<Vec<f32>>> = ThreadLocal::new();
 
     let mut found_items = search_data.search_items
@@ -118,10 +118,10 @@ const POPULATION_LOG_WEIGHT: f32 = 0.01;
 const ADMIN_UNIT_WEIGHT: f32 = 0.25;
 const COUNTRY_WEIGHT: f32 = 0.25;
 
-fn score_city<'a, 'cache>(
+fn score_city<'a>(
     search_item: &'a CitySearchItem,
-    city_interner: &'a Interner,
-    city_search_query: &'a CitySearchQuery,
+    city_interner: &Interner,
+    city_search_query: &CitySearchQuery,
     caches: &ThreadLocal<RefCell<Vec<f32>>>,
 ) -> CityScoredItem<'a> {
     city_search_query.name_rest_variants.iter()
@@ -153,15 +153,15 @@ fn score_city<'a, 'cache>(
         .unwrap()
 }
 
-fn score_city_impl<'a, 'cache>(
-    city_name_index_and_name: (usize, &'a InternedId),
-    city_admin_unit_maybe: &'a Option<InternedId>,
-    city_country: &'a InternedId,
+fn score_city_impl(
+    city_name_index_and_name: (usize, &InternedId),
+    city_admin_unit_maybe: &Option<InternedId>,
+    city_country: &InternedId,
     city_population: u64,
-    query_name_and_rest: &'a (InternedId, Option<InternedId>),
+    query_name_and_rest: &(InternedId, Option<InternedId>),
     caches: &ThreadLocal<RefCell<Vec<f32>>>,
-    city_interner: &'a Interner,
-    query_interner: &'a Interner,
+    city_interner: &Interner,
+    query_interner: &Interner,
 ) -> f32 {
     let (city_name_index, city_name) = city_name_index_and_name;
     let (query_name, query_rest_maybe) = query_name_and_rest;
@@ -198,12 +198,12 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 static JW_ENTERED_COUNT: AtomicUsize = AtomicUsize::new(0);
 static JW_COMPUTED_COUNT: AtomicUsize = AtomicUsize::new(0);
 
-fn jaro_winkler_cached<'a>(
-    city_str: &'a InternedId,
-    query_str: &'a InternedId,
+fn jaro_winkler_cached(
+    city_str: &InternedId,
+    query_str: &InternedId,
     caches: &ThreadLocal<RefCell<Vec<f32>>>,
-    city_interner: &'a Interner,
-    query_interner: &'a Interner
+    city_interner: &Interner,
+    query_interner: &Interner
 ) -> f32 {
     // JW_ENTERED_COUNT.fetch_add(1, Ordering::Relaxed);
     let mut cache = caches
