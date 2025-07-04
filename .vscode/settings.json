@@ -3,6 +3,7 @@
         "chrono",
         "Geonames",
         "Interner",
+        "minmax",
         "sysinfo",
         "tmax",
         "tmin"

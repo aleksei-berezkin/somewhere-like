@@ -152,3 +152,31 @@ pub fn split_name_rest(input: &str) -> Vec<(&str, Option<&str>)> {
         .chain(std::iter::once((input, None)))
         .collect()
 }
+
+/// Returns (min, max). Panics if the input is empty.
+/// 
+/// ```
+/// use backend::minmax;
+/// assert_eq!(minmax(&vec![1]), (1, 1));
+/// assert_eq!(minmax(&vec![1, 2, 3]), (1, 3));
+/// assert_eq!(minmax(&vec![3.0, 1.0, 2.0]), (1.0, 3.0));
+/// ```
+/// # Panics
+///
+/// ```rust,should_panic
+/// use backend::minmax;
+/// minmax(&Vec::<u8>::new());
+/// ```
+
+pub fn minmax<T: PartialOrd + Copy>(values: &Vec<T>) -> (T, T) {
+    let mut min = values[0];
+    let mut max = values[0];
+    for value in values.iter().skip(1) {
+        if *value < min {
+            min = *value;
+        } else if *value > max {
+            max = *value;
+        }
+    }
+    (min, max)
+}

@@ -1,12 +1,15 @@
+mod climate_search;
 mod search;
 use common::utils::eprintln_memory_usage;
 use search::{make_search_data, search_cities};
 
-use crate::search::make_search_query;
+use crate::{climate_search::make_climate_search_data, search::make_search_query};
 
 fn main() {
     let cities = common::cities::read_cities();
     let search_data = make_search_data(&cities);
+    let climate_search_items = make_climate_search_data(&cities);
+
     eprintln_memory_usage();
     eprintln!("Enter city name");
 
