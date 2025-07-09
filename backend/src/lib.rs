@@ -167,7 +167,6 @@ pub fn split_name_rest(input: &str) -> Vec<(&str, Option<&str>)> {
 /// use backend::minmax;
 /// minmax(&Vec::<u8>::new());
 /// ```
-
 pub fn minmax<T: PartialOrd + Copy>(values: &Vec<T>) -> (T, T) {
     let mut min = values[0];
     let mut max = values[0];
@@ -178,5 +177,18 @@ pub fn minmax<T: PartialOrd + Copy>(values: &Vec<T>) -> (T, T) {
             max = *value;
         }
     }
+    (min, max)
+}
+
+pub fn reduce_minmax<T: PartialOrd + Copy>(a: (T, T), b: (T, T)) -> (T, T) {
+    let min = if a.0 < b.0 { a.0 } else { b.0 };
+    let max = if a.1 > b.1 { a.1 } else { b.1 };
+    (min, max)
+}
+
+pub fn get_relative_minmax(a: (f32, f32), total_minmax: (f32, f32)) -> (f32, f32) {
+    let range = total_minmax.1 - total_minmax.0;
+    let min = (a.0 - total_minmax.0) / range;
+    let max = (a.1 - total_minmax.0) / range;
     (min, max)
 }

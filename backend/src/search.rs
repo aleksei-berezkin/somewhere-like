@@ -44,7 +44,7 @@ pub fn make_search_data(cities: &Vec<City>) -> CitySearchData {
             }
         })
         .collect();
-    eprintln!("Converted to search items in {} ms", start.elapsed().as_millis());
+    eprintln!("Built search items in {} ms", start.elapsed().as_millis());
 
     CitySearchData {
         interner: interner_builder.into_interner(),
