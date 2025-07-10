@@ -29,7 +29,7 @@ fn main() {
                         elevation: geo_city.elevation,
                         region: geo_city.region,
                         modification_date: geo_city.modification_date,
-                        climate: climate
+                        climate,
                     }
                 )
         })

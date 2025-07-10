@@ -1,4 +1,4 @@
-use backend::{get_relative_minmax, minmax, reduce_minmax};
+use backend::library::minmax::{get_relative_minmax, minmax, reduce_minmax};
 use common::cities::City;
 use rayon::prelude::*;
 

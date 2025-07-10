@@ -1,5 +1,5 @@
 use common::cities::City;
-use backend::{intern::{InternedId, Interner, InternerBuilder}, jaro_winkler_vec, split_name_rest};
+use backend::library::{intern::{InternedId, Interner, InternerBuilder}, jaro::jaro_winkler_vec, split::split_name_rest};
 use rayon::prelude::*;
 use std::cell::RefCell;
 use std::sync::atomic::{AtomicUsize, Ordering};
