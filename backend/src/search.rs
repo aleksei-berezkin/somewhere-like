@@ -6,12 +6,12 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use thread_local::ThreadLocal;
 
 pub struct CitySearchData<'a> {
-    pub search_items: Vec<CitySearchItem<'a>>,
-    pub intern_registry: InternRegistry,
+    search_items: Vec<CitySearchItem<'a>>,
+    intern_registry: InternRegistry,
 }
 
 #[derive(Debug)]
-pub struct CitySearchItem<'a> {
+struct CitySearchItem<'a> {
     /// Simply index in the cities list
     id: usize,
     city: &'a City,
@@ -79,17 +79,17 @@ pub fn make_search_query(query: &str) -> CitySearchQuery {
 }
 
 #[derive(Debug)]
-pub struct CityScoredItem<'a> {
-    id: usize,
-    score: f32,
-    matched_name: &'a str,
-    name: &'a str,
-    population: u64,
-    admin_unit: &'a Option<String>,
-    country: &'a str,
+pub struct CitySearchResultItem<'a> {
+    pub id: usize,
+    pub score: f32,
+    pub matched_name: &'a str,
+    pub name: &'a str,
+    pub population: u64,
+    pub admin_unit: &'a Option<String>,
+    pub country: &'a str,
 }
 
-pub fn search_cities<'a>(search_data: &'a CitySearchData<'a>, search_query: &CitySearchQuery) -> Vec<CityScoredItem<'a>> {
+pub fn search_cities<'a>(search_data: &'a CitySearchData<'a>, search_query: &CitySearchQuery) -> Vec<CitySearchResultItem<'a>> {
     let mut found_items = search_data.search_items
         .par_iter()
         .map(
@@ -123,7 +123,7 @@ fn score_city<'a>(
     city_search_query: &CitySearchQuery,
     cache: &ThreadLocal<RefCell<Vec<f32>>>,
     cache_hit_miss_count: &(AtomicUsize, AtomicUsize),
-) -> CityScoredItem<'a> {
+) -> CitySearchResultItem<'a> {
     city_search_query.name_rest_variants.iter()
         .flat_map(|query_name_and_rest| {
             search_item.names_lowercase.iter().enumerate()
@@ -139,7 +139,7 @@ fn score_city<'a>(
                         city_intern_registry,
                         &city_search_query.intern_registry
                     );
-                    CityScoredItem {
+                    CitySearchResultItem {
                         id: search_item.id,
                         score,
                         matched_name: &search_item.city.names[city_name_index_and_name.0],

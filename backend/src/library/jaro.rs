@@ -3,7 +3,7 @@
 pub fn jaro_winkler_vec<T: Eq>(a: &Vec<T>, b: &Vec<T>) -> f32 {
     let sim = jaro_vec(a, b);
 
-    if sim > 0.69999 { // Rounding issue with f32 vs f64. Original uses f64, and threshold is 0.7 here
+    if sim > 0.69999 { // Rounding issue with f32 vs f64. strsim uses f64, and this threshold is 0.7 there
         let max_prefix_len = a.len().min(b.len()).min(4);
         let mut prefix_len = 0;
         while prefix_len < max_prefix_len && a[prefix_len] == b[prefix_len] {
@@ -86,6 +86,7 @@ pub fn jaro_vec<T: Eq>(a: &Vec<T>, b: &Vec<T>) -> f32 {
 
 #[cfg(test)]
 mod tests {
+    use crate::assert_eq_d;
     use super::*;
     use rand::{rng, Rng};
     use rayon::prelude::*;
@@ -107,21 +108,6 @@ mod tests {
             assert_eq!(expected, jaro_vec(&v(a), &v(b)), "jaro a=\"{}\", b=\"{}\"", a, b);
             assert_eq!(expected, jaro_winkler_vec(&v(a), &v(b)), "jaro-winkler a=\"{}\", b=\"{}\"", a, b);
         }
-    }
-
-    macro_rules! assert_eq_d {
-        ($lhs:expr, $rhs:expr, $msg:expr) => {
-            assert!(
-                ($lhs as f32 - $rhs).abs() < 0.0001,
-                "lhs=\"{}\", rhs=\"{}\", message: {}",
-                $lhs,
-                $rhs,
-                $msg
-            );
-        };
-        ($lhs:expr, $rhs:expr) => {
-            assert_eq_d!($lhs, $rhs, "");
-        };
     }
 
     #[test]

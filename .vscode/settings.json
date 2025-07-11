@@ -3,9 +3,12 @@
         "chrono",
         "Geonames",
         "Interner",
+        "jaro",
         "minmax",
+        "strsim",
         "sysinfo",
         "tmax",
-        "tmin"
+        "tmin",
+        "winkler"
     ]
 }
