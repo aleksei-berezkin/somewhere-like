@@ -1,5 +1,5 @@
 use common::cities::City;
-use backend::library::{intern::{InternedId, Interner, InternerBuilder}, jaro::jaro_winkler_vec, split::split_name_rest};
+use backend::library::{intern::{InternId, InternRegistry, InternBuilder}, jaro::jaro_winkler_vec, split::split_name_rest};
 use rayon::prelude::*;
 use std::cell::RefCell;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -7,7 +7,7 @@ use thread_local::ThreadLocal;
 
 pub struct CitySearchData<'a> {
     pub search_items: Vec<CitySearchItem<'a>>,
-    pub interner: Interner,
+    pub intern_registry: InternRegistry,
 }
 
 #[derive(Debug)]
@@ -15,16 +15,16 @@ pub struct CitySearchItem<'a> {
     /// Simply index in the cities list
     id: usize,
     city: &'a City,
-    names_lowercase: Vec<InternedId>,
-    admin_unit_lowercase: Option<InternedId>,
-    country_lowercase: InternedId,
+    names_lowercase: Vec<InternId>,
+    admin_unit_lowercase: Option<InternId>,
+    country_lowercase: InternId,
 }
 
 pub fn make_search_data(cities: &Vec<City>) -> CitySearchData {
     let start = std::time::Instant::now();
-    let interner_builder = InternerBuilder::new();
+    let intern_builder = InternBuilder::new();
     let intern_lowercase = |s: &str| {
-        interner_builder.intern(s.to_lowercase().chars().collect())
+        intern_builder.intern(s.to_lowercase().chars().collect())
     };
 
     let search_items = cities.par_iter().enumerate()
@@ -47,14 +47,14 @@ pub fn make_search_data(cities: &Vec<City>) -> CitySearchData {
     eprintln!("Built search items in {} ms", start.elapsed().as_millis());
 
     CitySearchData {
-        interner: interner_builder.into_interner(),
+        intern_registry: intern_builder.build(),
         search_items
     }
 }
 
 pub struct CitySearchQuery {
-    name_rest_variants: Vec<(InternedId, Option<InternedId>)>,
-    interner: Interner,
+    name_rest_variants: Vec<(InternId, Option<InternId>)>,
+    intern_registry: InternRegistry,
     cache: ThreadLocal<RefCell<Vec<f32>>>,
     // Counting hits and misses has some overhead.
     // Should not be made in production.
@@ -63,16 +63,16 @@ pub struct CitySearchQuery {
 
 pub fn make_search_query(query: &str) -> CitySearchQuery {
     let lowercase_query = query.trim().to_lowercase();
-    let interner_builder = InternerBuilder::new();
+    let intern_builder = InternBuilder::new();
     let name_rest_variants = split_name_rest(&lowercase_query).iter()
         .map(|(name, rest)| (
-            interner_builder.intern(name.chars().collect()),
-            rest.map(|r| interner_builder.intern(r.chars().collect()))
+            intern_builder.intern(name.chars().collect()),
+            rest.map(|r| intern_builder.intern(r.chars().collect()))
         ))
         .collect();
     CitySearchQuery {
         name_rest_variants,
-        interner: interner_builder.into_interner(),
+        intern_registry: intern_builder.build(),
         cache: ThreadLocal::new(),
         cache_hit_miss_count: (AtomicUsize::new(0), AtomicUsize::new(0)),
     }
@@ -94,7 +94,7 @@ pub fn search_cities<'a>(search_data: &'a CitySearchData<'a>, search_query: &Cit
         .par_iter()
         .map(
             |item| {
-                score_city(item, &search_data.interner, search_query, &search_query.cache, &search_query.cache_hit_miss_count)
+                score_city(item, &search_data.intern_registry, search_query, &search_query.cache, &search_query.cache_hit_miss_count)
             }
         )
         .filter(|item| item.score > 0.85)
@@ -119,7 +119,7 @@ const COUNTRY_WEIGHT: f32 = 0.25;
 
 fn score_city<'a>(
     search_item: &'a CitySearchItem,
-    city_interner: &Interner,
+    city_intern_registry: &InternRegistry,
     city_search_query: &CitySearchQuery,
     cache: &ThreadLocal<RefCell<Vec<f32>>>,
     cache_hit_miss_count: &(AtomicUsize, AtomicUsize),
@@ -136,8 +136,8 @@ fn score_city<'a>(
                         query_name_and_rest,
                         cache,
                         cache_hit_miss_count,
-                        city_interner,
-                        &city_search_query.interner
+                        city_intern_registry,
+                        &city_search_query.intern_registry
                     );
                     CityScoredItem {
                         id: search_item.id,
@@ -155,28 +155,28 @@ fn score_city<'a>(
 }
 
 fn score_city_impl(
-    city_name_index_and_name: (usize, &InternedId),
-    city_admin_unit_maybe: &Option<InternedId>,
-    city_country: &InternedId,
+    city_name_index_and_name: (usize, &InternId),
+    city_admin_unit_maybe: &Option<InternId>,
+    city_country: &InternId,
     city_population: u64,
-    query_name_and_rest: &(InternedId, Option<InternedId>),
+    query_name_and_rest: &(InternId, Option<InternId>),
     cache: &ThreadLocal<RefCell<Vec<f32>>>,
     cache_hit_miss_count: &(AtomicUsize, AtomicUsize),
-    city_interner: &Interner,
-    query_interner: &Interner,
+    city_intern_registry: &InternRegistry,
+    query_intern_registry: &InternRegistry,
 ) -> f32 {
     let (city_name_index, city_name) = city_name_index_and_name;
     let (query_name, query_rest_maybe) = query_name_and_rest;
 
-    let name_similarity = jaro_winkler_cached(city_name, query_name, cache, cache_hit_miss_count, city_interner, query_interner);
+    let name_similarity = jaro_winkler_cached(city_name, query_name, cache, cache_hit_miss_count, city_intern_registry, query_intern_registry);
     let (
         admin_unit_similarity,
         country_similarity
     ) = if let Some(query_rest) = query_rest_maybe {
         (
-            jaro_winkler_cached(city_country, query_rest, cache, cache_hit_miss_count, city_interner, query_interner),
+            jaro_winkler_cached(city_country, query_rest, cache, cache_hit_miss_count, city_intern_registry, query_intern_registry),
             if let Some(city_admin_unit) = city_admin_unit_maybe {
-                jaro_winkler_cached(city_admin_unit, query_rest, cache, cache_hit_miss_count, city_interner, query_interner)
+                jaro_winkler_cached(city_admin_unit, query_rest, cache, cache_hit_miss_count, city_intern_registry, query_intern_registry)
             } else {
                 0.0
             },
@@ -196,18 +196,18 @@ fn score_city_impl(
 }
 
 fn jaro_winkler_cached(
-    city_str: &InternedId,
-    query_str: &InternedId,
+    city_str: &InternId,
+    query_str: &InternId,
     cache: &ThreadLocal<RefCell<Vec<f32>>>,
     cache_hit_miss_count: &(AtomicUsize, AtomicUsize),
-    city_interner: &Interner,
-    query_interner: &Interner
+    city_intern_registry: &InternRegistry,
+    query_intern_registry: &InternRegistry
 ) -> f32 {
     let mut cache = cache
-        .get_or(|| RefCell::new(vec![-1.0_f32; city_interner.len() as usize * query_interner.len() as usize]))
+        .get_or(|| RefCell::new(vec![-1.0_f32; city_intern_registry.len() as usize * query_intern_registry.len() as usize]))
         .borrow_mut();
 
-    let index = (*city_str * query_interner.len() + *query_str) as usize;
+    let index = (*city_str * query_intern_registry.len() + *query_str) as usize;
     let cached_score = cache[index];
     if cached_score >= 0.0 {
         cache_hit_miss_count.0.fetch_add(1, Ordering::Relaxed);
@@ -217,8 +217,8 @@ fn jaro_winkler_cached(
     cache_hit_miss_count.1.fetch_add(1, Ordering::Relaxed);
 
     let score = jaro_winkler_vec(
-        city_interner.resolve(*city_str).unwrap(),
-        query_interner.resolve(*query_str).unwrap()
+        city_intern_registry.resolve(*city_str).unwrap(),
+        query_intern_registry.resolve(*query_str).unwrap()
     );
     cache[index] = score;
     score
