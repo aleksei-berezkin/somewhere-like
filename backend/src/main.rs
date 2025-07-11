@@ -1,5 +1,6 @@
 mod climate_search;
 mod search;
+mod api;
 use common::utils::eprintln_memory_usage;
 use search::{make_search_data, search_cities};
 
@@ -26,12 +27,12 @@ fn main() {
 
         let id_maybe: Result<usize, _> = query.parse();
         if let Ok(id) = id_maybe {
-            let found_items = search_climate(&climate_search_data, id);
-            found_items.iter().for_each(|f| eprintln!("{:?}", f));
+            let climate_search_result = search_climate(&climate_search_data, id);
+            climate_search_result.items.into_iter().for_each(|f| eprintln!("{:?}", f));
         } else {
             let city_search_query = make_search_query(query);
-            let found_items = search_cities(&search_data, &city_search_query);
-            found_items.iter().for_each(|f| eprintln!("{:?}", f));
+            let city_search_result = search_cities(&search_data, &city_search_query);
+            city_search_result.items.into_iter().for_each(|f| eprintln!("{:?}", f));
         }
 
         eprintln!("Done \"{}\" in {} ms", query, started.elapsed().as_millis());

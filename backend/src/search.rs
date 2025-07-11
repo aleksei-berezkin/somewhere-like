@@ -1,9 +1,11 @@
 use common::cities::City;
 use backend::library::{intern::{InternId, InternRegistry, InternBuilder}, jaro::jaro_winkler_vec, split::split_name_rest};
+use crate::api::{CitySearchResult, CitySearchResultItem};
 use rayon::prelude::*;
 use std::cell::RefCell;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use thread_local::ThreadLocal;
+
 
 pub struct CitySearchData<'a> {
     search_items: Vec<CitySearchItem<'a>>,
@@ -78,19 +80,10 @@ pub fn make_search_query(query: &str) -> CitySearchQuery {
     }
 }
 
-#[derive(Debug)]
-pub struct CitySearchResultItem<'a> {
-    pub id: usize,
-    pub score: f32,
-    pub matched_name: &'a str,
-    pub name: &'a str,
-    pub population: u64,
-    pub admin_unit: &'a Option<String>,
-    pub country: &'a str,
-}
 
-pub fn search_cities<'a>(search_data: &'a CitySearchData<'a>, search_query: &CitySearchQuery) -> Vec<CitySearchResultItem<'a>> {
-    let mut found_items = search_data.search_items
+pub fn search_cities<'a>(search_data: &'a CitySearchData<'a>, search_query: &CitySearchQuery) -> CitySearchResult<'a> {
+    let started = std::time::Instant::now();
+    let mut items = search_data.search_items
         .par_iter()
         .map(
             |item| {
@@ -103,13 +96,12 @@ pub fn search_cities<'a>(search_data: &'a CitySearchData<'a>, search_query: &Cit
     let hit = search_query.cache_hit_miss_count.0.load(Ordering::Relaxed);
     let miss = search_query.cache_hit_miss_count.1.load(Ordering::Relaxed);
 
-    eprintln!(
-        "jaro_winkler hit {}, miss {}, hit rate {:.2}",
-        hit, miss, 100.0 *(hit as f64 / (hit + miss) as f64)
-    );
-
-    found_items.sort_by(|a, b| b.score.total_cmp(&a.score));
-    found_items.into_iter().take(10).collect()
+    items.sort_by(|a, b| b.score.total_cmp(&a.score));
+    CitySearchResult {
+        items: items.into_iter().take(10).collect::<Vec<_>>(),
+        elapsed_ms: started.elapsed().as_millis() as u32,
+        cache_hit_rate_percent: 100.0 * (hit as f32 / (hit + miss) as f32),
+    }
 }
 
 const NAME_POSITION_WEIGHT: f32 = -0.001;

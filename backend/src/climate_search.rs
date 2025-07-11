@@ -2,6 +2,8 @@ use backend::library::{earth::{arc_length_to_chord_length, get_arc_distance_km, 
 use common::cities::City;
 use rayon::prelude::*;
 
+use crate::api::{ClimateSearchResult, ClimateSearchResultItem};
+
 pub struct ClimateSearchData<'a> {
     /// Order: same as in the Cities list
     items: Vec<ClimateSearchItem<'a>>,
@@ -92,18 +94,14 @@ struct ClimateScoredItem<'a> {
     diff: f32,
 }
 
-#[derive(Debug)]
-pub struct ClimateSearchResultItem<'a> {
-    pub id: usize,
-    pub city: &'a City,
-    pub distance_km: f64,
-    pub similarity_percent: f32,
-}
-
-pub fn search_climate<'a>(data: &'a ClimateSearchData, id: usize) -> Vec<ClimateSearchResultItem<'a>> {
+pub fn search_climate<'a>(data: &'a ClimateSearchData, id: usize) -> ClimateSearchResult<'a> {
+    let started = std::time::Instant::now();
     let query_maybe = &data.items.get(id);
     if query_maybe.is_none() {
-        return Vec::new();
+        return ClimateSearchResult {
+            items: vec![],
+            elapsed_ms: started.elapsed().as_millis() as u32,
+        };
     }
     let query = query_maybe.unwrap();
 
@@ -112,8 +110,6 @@ pub fn search_climate<'a>(data: &'a ClimateSearchData, id: usize) -> Vec<Climate
     let min_chord_length_sq = min_chord_length * min_chord_length;
 
     let (scored_items, max_diff) = score_items(&data.items, query);
-
-    eprintln!("Max diff {}", max_diff);
 
     let mut filtered_items = Vec::<ClimateScoredItem>::new();
 
@@ -135,7 +131,7 @@ pub fn search_climate<'a>(data: &'a ClimateSearchData, id: usize) -> Vec<Climate
 
     eprintln!("Found {} results", filtered_items.len());
 
-    filtered_items.into_iter()
+    let result_items = filtered_items.into_iter()
         .map(|item| ClimateSearchResultItem {
             id: item.id,
             city: item.city,
@@ -148,7 +144,12 @@ pub fn search_climate<'a>(data: &'a ClimateSearchData, id: usize) -> Vec<Climate
             similarity_percent: 100.0 * (1.0 - item.diff / max_diff),
         })
         .take(20)
-        .collect()
+        .collect::<Vec<_>>();
+
+    ClimateSearchResult {
+        items: result_items,
+        elapsed_ms: started.elapsed().as_millis() as u32,
+    }
 }
 
 fn score_items<'a>(items: &'a Vec<ClimateSearchItem>, query: &'a ClimateSearchItem) -> (Vec<ClimateScoredItem<'a>>, f32) {
