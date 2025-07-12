@@ -76,6 +76,10 @@ pub fn get_cartesian_distance_km_squared(a: &[f64; 3], b: &[f64; 3]) -> f64 {
 /// use backend::assert_eq_d;
 /// use backend::library::earth::get_arc_distance_km;
 /// 
+/// // Same
+/// assert_eq_d!(0.0, get_arc_distance_km(0.0, 0.0, 0.0, 0.0));
+/// assert_eq_d!(0.0, get_arc_distance_km(55.15411, 124.72465, 55.15411, 124.72465)); // Tynda
+///
 /// // One minute (1/60 deg) is approx. one sea mile
 /// let minute = 1.0 / 60.0;
 /// assert_eq_d!(1.85325, get_arc_distance_km(0.0, -100.0, 0.0, -100.0 + minute));
@@ -104,5 +108,8 @@ pub fn get_arc_distance_km(a_lat: f64, a_lon: f64, b_lat: f64, b_lon: f64) -> f6
     let phi_b = b_lat.to_radians();
     let lambda_a = a_lon.to_radians();
     let lambda_b = b_lon.to_radians();
-    EARTH_RADIUS_KM * (phi_a.sin() * phi_b.sin() + phi_a.cos() * phi_b.cos() * (lambda_a - lambda_b).abs().cos()).acos()
+    (phi_a.sin() * phi_b.sin() + phi_a.cos() * phi_b.cos() * (lambda_a - lambda_b).abs().cos())
+        .clamp(-1.0, 1.0)    // Because of f64 rounding issues may slightly exceed bounds
+        .acos()
+        * EARTH_RADIUS_KM
 }

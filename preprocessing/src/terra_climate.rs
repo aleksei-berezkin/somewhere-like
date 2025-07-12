@@ -1,6 +1,7 @@
 use std::{fmt::Debug};
 
-use preprocessing::{get_closest_index,  iterate_increasing_squares, round_0_1_and_assert_finite};
+use common::utils::round_0_1_and_assert_finite;
+use preprocessing::{get_closest_index,  iterate_increasing_squares};
 
 pub trait TerraVal: netcdf::NcTypeDescriptor + Copy + Eq {
     fn read_attr_value(var: &netcdf::Variable, attr_name: &str) -> Self;

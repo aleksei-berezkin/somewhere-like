@@ -1,5 +1,5 @@
 use backend::library::{earth::{arc_length_to_chord_length, get_arc_distance_km, get_cartesian_distance_km_squared, get_cartesian_xyz}, minmax::{diff_minmax, diff_minmax_maybe, get_relative_minmax, minmax, minmax_maybe, reduce_minmax, reduce_minmax_maybe}};
-use common::cities::City;
+use common::{cities::City, utils::round_0_1_and_assert_finite};
 use rayon::prelude::*;
 
 use crate::api::{ClimateSearchResult, ClimateSearchResultItem};
@@ -134,11 +134,13 @@ pub fn search_climate<'a>(data: &'a ClimateSearchData, id: usize) -> ClimateSear
         .map(|item| ClimateSearchResultItem {
             id: item.id,
             city: item.city,
-            distance_km: get_arc_distance_km(
-                item.city.latitude,
-                item.city.longitude,
-                query.city.latitude,
-                query.city.longitude,
+            distance_km: round_0_1_and_assert_finite(
+                get_arc_distance_km(
+                    item.city.latitude,
+                    item.city.longitude,
+                    query.city.latitude,
+                    query.city.longitude,
+                )
             ),
             similarity_percent: 100.0 * (1.0 - item.diff / max_diff),
         })

@@ -43,6 +43,8 @@ dependencies = [
  "rand",
  "rayon",
  "regex",
+ "serde",
+ "serde_json",
  "strsim",
  "thread_local",
 ]
@@ -95,9 +97,9 @@ version = "0.0.0"
 dependencies = [
  "chrono",
  "csv",
+ "num-traits",
  "rayon",
  "serde",
- "serde_json",
  "sysinfo",
 ]
 

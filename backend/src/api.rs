@@ -1,13 +1,14 @@
 use common::cities::City;
+use serde::{Serialize};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct CitySearchResult<'a> {
     pub items: Vec<CitySearchResultItem<'a>>,
     pub elapsed_ms: u32,
     pub cache_hit_rate_percent: f32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct CitySearchResultItem<'a> {
     pub id: usize,
     pub score: f32,
@@ -18,12 +19,13 @@ pub struct CitySearchResultItem<'a> {
     pub country: &'a str,
 }
 
+#[derive(Debug, Serialize)]
 pub struct ClimateSearchResult<'a> {
     pub items: Vec<ClimateSearchResultItem<'a>>,
     pub elapsed_ms: u32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct ClimateSearchResultItem<'a> {
     pub id: usize,
     pub city: &'a City,

@@ -1,7 +1,6 @@
-use common::{cities::{write_cities, City, CityClimate}, utils::eprintln_memory_usage};
+use common::{cities::{write_cities, City, CityClimate}, utils::{eprintln_memory_usage, round_0_1_and_assert_finite}};
 
 mod terra_climate;
-use preprocessing::round_0_1_and_assert_finite;
 use rayon::prelude::*;
 use terra_climate::TerraClimateData;
 
