@@ -135,3 +135,41 @@ pub fn iterate_increasing_squares(x_center: usize, y_center: usize, r_max: usize
             }
         )
 }
+
+/// Rounds to 1 decimal place and checks it's finite.
+/// 
+/// Because the most data is int * 0.1, this util is useful
+/// to remove rounding artifacts like in the first example.
+/// 
+/// ```
+/// use preprocessing::round_0_1_and_assert_finite;
+/// 
+/// assert_eq!(1.2, round_0_1_and_assert_finite(1.200007));
+/// assert_eq!(1.2, round_0_1_and_assert_finite(1.19));
+/// assert_eq!(-10.6, round_0_1_and_assert_finite(-10.56));
+/// assert_eq!(0.0, round_0_1_and_assert_finite(0.0));
+/// ```
+/// # Panics
+/// 
+/// NAN
+/// ```rust,should_panic
+/// use preprocessing::round_0_1_and_assert_finite;
+/// round_0_1_and_assert_finite(f32::NAN);
+/// ```
+/// 
+/// INFINITY
+/// ```rust,should_panic
+/// use preprocessing::round_0_1_and_assert_finite;
+/// round_0_1_and_assert_finite(f32::INFINITY);
+/// ```
+/// 
+/// NEG_INFINITY
+/// ```rust,should_panic
+/// use preprocessing::round_0_1_and_assert_finite;
+/// round_0_1_and_assert_finite(f32::NEG_INFINITY);
+/// ```
+pub fn round_0_1_and_assert_finite(val: f32) -> f32 {
+    let rounded = (val * 10.0).round() / 10.0;
+    assert!(rounded.is_finite(), "Non-finite value: {}", rounded);
+    rounded
+}

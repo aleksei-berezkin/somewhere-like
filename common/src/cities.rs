@@ -6,8 +6,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{cities::serde_vec::VEC_DELIMITER, utils::get_data_out_dir};
 
+pub type City = BaseCity;
+
 #[derive(Debug, Serialize, Deserialize)]
-pub struct City {
+pub struct BaseCity {
     #[serde(with = "serde_vec")]
     pub names: Vec<String>,
     pub latitude: f64,
@@ -23,18 +25,12 @@ pub struct City {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CityClimate {
-    #[serde(with = "serde_vec")]
-    pub humidity_monthly: Vec<u8>,
-    #[serde(with = "serde_vec")]
-    pub ppt_monthly: Vec<f32>,
-    #[serde(with = "serde_vec")]
-    pub srad_monthly: Vec<f32>,
-    #[serde(with = "serde_vec")]
-    pub tmax_monthly: Vec<f32>,
-    #[serde(with = "serde_vec")]
-    pub tmin_monthly: Vec<f32>,
-    #[serde(with = "serde_vec")]
-    pub ws_monthly: Vec<f32>,
+    pub humidity_monthly: [Option<f32>; 12],
+    pub ppt_monthly: [f32; 12],
+    pub srad_monthly: [f32; 12],
+    pub tmax_monthly: [f32; 12],
+    pub tmin_monthly: [f32; 12],
+    pub ws_monthly: [f32; 12],
 }
 
 pub fn assert_city_name(name: &str) {

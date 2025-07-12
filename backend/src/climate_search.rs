@@ -1,4 +1,4 @@
-use backend::library::{earth::{arc_length_to_chord_length, get_arc_distance_km, get_cartesian_distance_km_squared, get_cartesian_xyz}, minmax::{get_relative_minmax, minmax, reduce_minmax}};
+use backend::library::{earth::{arc_length_to_chord_length, get_arc_distance_km, get_cartesian_distance_km_squared, get_cartesian_xyz}, minmax::{diff_minmax, diff_minmax_maybe, get_relative_minmax, minmax, minmax_maybe, reduce_minmax, reduce_minmax_maybe}};
 use common::cities::City;
 use rayon::prelude::*;
 
@@ -20,7 +20,7 @@ struct ClimateSearchItem<'a> {
 
 #[derive(Debug)]
 struct ClimateMinMax {
-    humidity: (f32, f32),
+    humidity: Option<(f32, f32)>,
     ppt: (f32, f32),
     srad: (f32, f32),
     tmax: (f32, f32),
@@ -34,7 +34,7 @@ pub fn make_climate_search_data<'a>(cities: &'a Vec<City>) -> ClimateSearchData<
     let total_minmax = cities.par_iter()
         .map(|city| get_climate_min_max(city))
         .reduce_with(|a, b| ClimateMinMax {
-            humidity: reduce_minmax(a.humidity, b.humidity),
+            humidity: reduce_minmax_maybe(a.humidity, b.humidity),
             ppt: reduce_minmax(a.ppt, b.ppt),
             srad: reduce_minmax(a.srad, b.srad),
             tmax: reduce_minmax(a.tmax, b.tmax),
@@ -47,7 +47,7 @@ pub fn make_climate_search_data<'a>(cities: &'a Vec<City>) -> ClimateSearchData<
         .map(|(index, city)| {
             let climate_minmax = get_climate_min_max(city);
             let relative_minmax = ClimateMinMax {
-                humidity: get_relative_minmax(climate_minmax.humidity, total_minmax.humidity),
+                humidity: climate_minmax.humidity.map(|h| get_relative_minmax(h, total_minmax.humidity.unwrap())),
                 ppt: get_relative_minmax(climate_minmax.ppt, total_minmax.ppt),
                 srad: get_relative_minmax(climate_minmax.srad, total_minmax.srad),
                 tmax: get_relative_minmax(climate_minmax.tmax, total_minmax.tmax),
@@ -69,8 +69,7 @@ pub fn make_climate_search_data<'a>(cities: &'a Vec<City>) -> ClimateSearchData<
 }
 
 fn get_climate_min_max(city: &City) -> ClimateMinMax {
-    let humidity_u32 = minmax(&city.climate.humidity_monthly);
-    let humidity = (humidity_u32.0 as f32, humidity_u32.1 as f32);
+    let humidity = minmax_maybe(&city.climate.humidity_monthly);
     let ppt = minmax(&city.climate.ppt_monthly);
     let srad = minmax(&city.climate.srad_monthly);
     let tmax = minmax(&city.climate.tmax_monthly);
@@ -178,14 +177,10 @@ fn score_items<'a>(items: &'a Vec<ClimateSearchItem>, query: &'a ClimateSearchIt
 fn get_climate_diff(item: &ClimateSearchItem, query: &ClimateSearchItem) -> f32 {
     let a = &item.relative_minmax;
     let b = &query.relative_minmax;
-    diff_minmax(a.humidity, b.humidity)
+    diff_minmax_maybe(a.humidity, b.humidity).unwrap_or(0.0)
         + diff_minmax(a.ppt, b.ppt)
         + diff_minmax(a.srad, b.srad)
         + diff_minmax(a.tmax, b.tmax)
         + diff_minmax(a.tmin, b.tmin)
         + diff_minmax(a.ws, b.ws)
-}
-
-fn diff_minmax(a: (f32, f32), b: (f32, f32)) -> f32 {
-    (a.0 - b.0).abs() + (a.1 - b.1).abs()
 }

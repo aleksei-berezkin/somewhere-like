@@ -1,6 +1,6 @@
 use std::{fmt::Debug};
 
-use preprocessing::{get_closest_index,  iterate_increasing_squares};
+use preprocessing::{get_closest_index,  iterate_increasing_squares, round_0_1_and_assert_finite};
 
 pub trait TerraVal: netcdf::NcTypeDescriptor + Copy + Eq {
     fn read_attr_value(var: &netcdf::Variable, attr_name: &str) -> Self;
@@ -69,19 +69,21 @@ impl<T: TerraVal> TerraClimateData<T> {
         terra_climate_data
     }
 
-    pub fn get_monthly_values(&self, lat: f64, lon: f64, city: &str) -> Option<Vec<f32>> {
+    pub fn get_monthly_values(&self, lat: f64, lon: f64, city: &str) -> Option<[f32; 12]> {
         let lat_index = get_closest_index(&self.lat_values, lat);
         let lon_index = get_closest_index(&self.lon_values, lon);
 
-        let monthly_values: Option<Vec<f32>> = (0..12)
-            .map(|month| self.get_closest_value(month, lat_index, lon_index))
-            .collect();
-
-        if monthly_values.is_none() {
-            eprintln!("{} at {:?}: not found \"{}\"", city, (lat, lon), self.var_name);
+        let mut monthly_values = [0_f32; 12];
+        for month in 0..12 {
+            let val = self.get_closest_value(month, lat_index, lon_index);
+            if val.is_none() {
+                eprintln!("{} at {:?}: not found \"{}\"", city, (lat, lon), self.var_name);
+                return None;
+            }
+            monthly_values[month] = val.unwrap();
         }
 
-        monthly_values
+        Some(monthly_values)
     }
 
     fn get_closest_value(&self, month: usize, lat_index: usize, lon_index: usize) -> Option<f32> {
@@ -97,7 +99,7 @@ impl<T: TerraVal> TerraClimateData<T> {
         if raw == self.missing_value {
             None
         } else {
-            Some(T::to_f32(raw) * self.scale_factor + self.add_offset)
+            Some(round_0_1_and_assert_finite(T::to_f32(raw) * self.scale_factor + self.add_offset))
         }
     }
 }

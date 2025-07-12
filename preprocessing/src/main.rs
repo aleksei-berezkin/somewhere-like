@@ -1,6 +1,7 @@
 use common::{cities::{write_cities, City, CityClimate}, utils::eprintln_memory_usage};
 
 mod terra_climate;
+use preprocessing::round_0_1_and_assert_finite;
 use rayon::prelude::*;
 use terra_climate::TerraClimateData;
 
@@ -74,9 +75,17 @@ fn get_city_climate(city: &GeonamesCity, all_terra_climate: &AllTerraClimate) ->
     let vpd_monthly = all_terra_climate.vpd.get_monthly_values(lat, lon, name)?;
     let ws_monthly = all_terra_climate.ws.get_monthly_values(lat, lon, name)?;
 
-    let humidity_monthly = vap_monthly.iter().zip(vpd_monthly.iter())
-        .map(|(vap, vpd)| (vap / (vap + vpd) * 100.0) as u8)
-        .collect();
+    let mut humidity_monthly: [Option<f32>; 12] = [None; 12];
+    for month in 0..12 {
+        let vap = vap_monthly[month];
+        let vpd = vpd_monthly[month];
+        let sat = vap + vpd;
+        humidity_monthly[month] = if sat == 0.0 {
+            None // Inaccurate input data
+        } else {
+            Some(round_0_1_and_assert_finite(vap / sat * 100.0))
+        };
+    }
 
     Some(CityClimate {
         humidity_monthly,
