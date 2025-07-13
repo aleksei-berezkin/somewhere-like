@@ -1,4 +1,4 @@
-use common::cities::City;
+use common::city::City;
 use serde::{Serialize};
 
 #[derive(Debug, Serialize)]

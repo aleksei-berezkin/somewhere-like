@@ -1,4 +1,4 @@
-use common::cities::City;
+use common::city::City;
 use backend::library::{intern::{InternId, InternRegistry, InternBuilder}, jaro::jaro_winkler_vec, split::split_name_rest};
 use crate::api::{CitySearchResult, CitySearchResultItem};
 use rayon::prelude::*;

@@ -1,7 +1,7 @@
 mod climate_search;
 mod search;
 mod api;
-use common::utils::eprintln_memory_usage;
+use common::{city::City, city_csv::read_cities, util::eprintln_memory_usage};
 use search::{make_search_data, search_cities};
 
 use crate::{climate_search::{make_climate_search_data, search_climate}, search::make_search_query};
@@ -16,7 +16,7 @@ macro_rules! eprintln_json_items {
 }
 
 fn main() {
-    let cities = common::cities::read_cities();
+    let cities = read_cities();
     let search_data = make_search_data(&cities);
     let climate_search_data = make_climate_search_data(&cities);
 

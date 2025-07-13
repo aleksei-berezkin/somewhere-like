@@ -1,4 +1,4 @@
-use common::{cities::{write_cities, City, CityClimate}, utils::{eprintln_memory_usage, round_0_1_and_assert_finite}};
+use common::{city::{City, CityClimate}, city_csv::write_cities, util::{eprintln_memory_usage, round_0_1_and_assert_finite}};
 
 mod terra_climate;
 use rayon::prelude::*;
@@ -36,8 +36,9 @@ fn main() {
         .collect();
 
     eprintln_memory_usage();
-    write_cities(&cities);
-    eprintln!("Done {} cities in {:.2} sec", cities.len(), started.elapsed().as_secs_f32());
+    let cities_len = cities.len();
+    write_cities(cities);
+    eprintln!("Done {} cities in {:.2} sec", cities_len, started.elapsed().as_secs_f32());
 }
 
 struct AllTerraClimate {

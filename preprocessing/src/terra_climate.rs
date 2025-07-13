@@ -1,6 +1,6 @@
 use std::{fmt::Debug};
 
-use common::utils::round_0_1_and_assert_finite;
+use common::util::round_0_1_and_assert_finite;
 use preprocessing::{get_closest_index,  iterate_increasing_squares};
 
 pub trait TerraVal: netcdf::NcTypeDescriptor + Copy + Eq {
@@ -40,7 +40,7 @@ pub struct TerraClimateData<T: TerraVal> {
 impl<T: TerraVal> TerraClimateData<T> {
     pub fn new(var_name: &str) -> TerraClimateData<T> {
         let file_name = format!("TerraClimate19912020_{}.nc", var_name);
-        let file = netcdf::open(common::utils::get_data_in_dir().join(&file_name)).unwrap();
+        let file = netcdf::open(common::util::get_data_in_dir().join(&file_name)).unwrap();
 
         let get_all_values_f64 = |var_name: &str| {
             file.variable(var_name).unwrap().get_values::<f64, _>(..).unwrap()

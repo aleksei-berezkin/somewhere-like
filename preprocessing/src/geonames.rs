@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Debug, fs::File, io::{BufRead, BufReader}, str::FromStr};
 use chrono::NaiveDate;
-use common::{cities::{assert_city_name}, utils::get_data_in_dir};
+use common::util::get_data_in_dir;
 
 #[derive(Debug)]
 pub struct GeonamesCity {
@@ -32,8 +32,6 @@ fn parse_geonames_line(line: String, line_number: usize) -> GeonamesCity {
         .chain(fields[3].split(',').filter(|s| !s.is_empty()))
         .map(str::to_owned)
         .collect();
-
-    names.iter().for_each(|n| assert_city_name(n));
 
     let latitude_str = fields[4];
     let latitude = f64::from_str(latitude_str).expect(&format!("Invalid latitude: \"{}\" on line {}", latitude_str, line_number));
