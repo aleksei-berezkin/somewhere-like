@@ -4,7 +4,7 @@ use num_traits::Float;
 
 /// Returns path to `data_in` directory, assuming the current directory is somewhere inside the project.
 /// ```
-/// assert!(common::utils::get_data_in_dir().to_str().unwrap().ends_with("data-in"));
+/// assert!(common::util::get_data_in_dir().to_str().unwrap().ends_with("data-in"));
 /// ```
 pub fn get_data_in_dir() -> PathBuf {
     get_project_dir().join("data-in")
@@ -12,7 +12,7 @@ pub fn get_data_in_dir() -> PathBuf {
 
 /// Returns path to `data_out` directory, assuming the current directory is somewhere inside the project.
 /// ```
-/// assert!(common::utils::get_data_out_dir().to_str().unwrap().ends_with("data-out"));
+/// assert!(common::util::get_data_out_dir().to_str().unwrap().ends_with("data-out"));
 /// ```
 pub fn get_data_out_dir() -> PathBuf {
     get_project_dir().join("data-out")
@@ -43,7 +43,7 @@ pub fn eprintln_memory_usage() {
 /// to remove rounding artifacts like in the first example.
 /// 
 /// ```
-/// use common::utils::round_0_1_and_assert_finite;
+/// use common::util::round_0_1_and_assert_finite;
 /// 
 /// assert_eq!(1.2, round_0_1_and_assert_finite(1.200007));
 /// assert_eq!(1.2, round_0_1_and_assert_finite(1.19));
@@ -54,19 +54,19 @@ pub fn eprintln_memory_usage() {
 /// 
 /// NAN
 /// ```rust,should_panic
-/// use common::utils::round_0_1_and_assert_finite;
+/// use common::util::round_0_1_and_assert_finite;
 /// round_0_1_and_assert_finite(f32::NAN);
 /// ```
 /// 
 /// INFINITY
 /// ```rust,should_panic
-/// use common::utils::round_0_1_and_assert_finite;
+/// use common::util::round_0_1_and_assert_finite;
 /// round_0_1_and_assert_finite(f32::INFINITY);
 /// ```
 /// 
 /// NEG_INFINITY
 /// ```rust,should_panic
-/// use common::utils::round_0_1_and_assert_finite;
+/// use common::util::round_0_1_and_assert_finite;
 /// round_0_1_and_assert_finite(f32::NEG_INFINITY);
 /// ```
 pub fn round_0_1_and_assert_finite<T: Float + std::fmt::Debug>(val: T) -> T {
