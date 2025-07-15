@@ -1,43 +1,6 @@
 use std::{fs::File, io::BufRead, iter::once};
 use rayon::prelude::*;
-use crate::{city::{BaseCity, City}, util::get_data_out_dir};
-
-type CityCsv = BaseCity<String>;
-
-const NAMES_DELIMITER: &str = "|";
-
-fn city_to_csv(city: City) -> CityCsv {
-    city.names.iter().for_each(|name|
-        assert!(!name.contains(NAMES_DELIMITER), "The name contains a delimiter: {}", name)
-    );
-    CityCsv {
-        names: city.names.join(NAMES_DELIMITER),
-        latitude: city.latitude,
-        longitude: city.longitude,
-        admin_unit: city.admin_unit,
-        country: city.country,
-        population: city.population,
-        elevation: city.elevation,
-        region: city.region,
-        modification_date: city.modification_date,
-        climate: city.climate
-    }
-}
-
-fn city_from_csv(city: CityCsv) -> City {
-    City {
-        names: city.names.split(NAMES_DELIMITER).map(&str::to_owned).collect(),
-        latitude: city.latitude,
-        longitude: city.longitude,
-        admin_unit: city.admin_unit,
-        country: city.country,
-        population: city.population,
-        elevation: city.elevation,
-        region: city.region,
-        modification_date: city.modification_date,
-        climate: city.climate
-    }
-}
+use crate::{city::{CityCsvFriendly, City}, util::get_data_out_dir};
 
 const FILE_NAME: &str = "cities.csv";
 
@@ -50,7 +13,7 @@ pub fn write_cities(cities: Vec<City>) {
         .delimiter(b'\t')
         .from_writer(&file);
     cities.into_iter().for_each(
-        |c| writer.serialize(&city_to_csv(c)).unwrap()
+        |c| writer.serialize(&CityCsvFriendly::from(c)).unwrap()
     );
     writer.flush().unwrap();
     let file_size = file.metadata().unwrap().len();
@@ -76,8 +39,8 @@ pub fn read_cities() -> Vec<City> {
                 .has_headers(false)
                 .delimiter(b'\t')
                 .from_reader(chunk_str.as_bytes());
-            reader.deserialize::<CityCsv>()
-                .map(|res| city_from_csv(res.unwrap()))
+            reader.deserialize::<CityCsvFriendly>()
+                .map(|res| City::from(res.unwrap()))
                 .collect::<Vec<City>>()
         })
         .collect::<Vec<_>>();

@@ -1,2 +1,2 @@
 [workspace]
-members = ["backend", "common", "preprocessing"]
+members = ["backend", "derive_csv_friendly", "common", "preprocessing"]

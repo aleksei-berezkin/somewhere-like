@@ -2,6 +2,7 @@ use common::city::City;
 use serde::{Serialize};
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CitySearchResult<'a> {
     pub items: Vec<CitySearchResultItem<'a>>,
     pub elapsed_ms: u32,
@@ -9,6 +10,7 @@ pub struct CitySearchResult<'a> {
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CitySearchResultItem<'a> {
     pub id: usize,
     pub score: f32,
@@ -20,12 +22,14 @@ pub struct CitySearchResultItem<'a> {
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ClimateSearchResult<'a> {
     pub items: Vec<ClimateSearchResultItem<'a>>,
     pub elapsed_ms: u32,
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ClimateSearchResultItem<'a> {
     pub id: usize,
     pub city: &'a City,

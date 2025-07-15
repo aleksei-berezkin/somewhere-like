@@ -1,12 +1,11 @@
 use chrono::NaiveDate;
+use derive_csv_friendly::CsvFriendly;
 use serde::{Deserialize, Serialize};
 
-pub type City = BaseCity<Vec<String>>;
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, CsvFriendly, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct BaseCity<NamesT> {
-    pub names: NamesT,
+pub struct City {
+    pub names: Vec<String>,
     pub latitude: f64,
     pub longitude: f64,
     pub admin_unit: Option<String>,

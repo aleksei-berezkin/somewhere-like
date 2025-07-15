@@ -1,7 +1,7 @@
 mod climate_search;
 mod search;
 mod api;
-use common::{city::City, city_csv::read_cities, util::eprintln_memory_usage};
+use common::{city_csv::read_cities, util::eprintln_memory_usage};
 use search::{make_search_data, search_cities};
 
 use crate::{climate_search::{make_climate_search_data, search_climate}, search::make_search_query};

@@ -97,6 +97,7 @@ version = "0.0.0"
 dependencies = [
  "chrono",
  "csv",
+ "derive_csv_friendly",
  "num-traits",
  "rayon",
  "serde",
@@ -198,6 +199,15 @@ dependencies = [
  "lock_api",
  "once_cell",
  "parking_lot_core",
+]
+
+[[package]]
+name = "derive_csv_friendly"
+version = "0.0.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
