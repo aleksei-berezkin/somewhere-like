@@ -8,6 +8,7 @@ use thread_local::ThreadLocal;
 
 
 pub struct CitySearchData<'a> {
+    /// Order: same as in the Cities list
     search_items: Vec<CitySearchItem<'a>>,
     intern_registry: InternRegistry,
 }
@@ -81,7 +82,7 @@ pub fn make_search_query(query: &str) -> CitySearchQuery {
 }
 
 
-pub fn search_cities<'a>(search_data: &'a CitySearchData<'a>, search_query: &CitySearchQuery) -> CitySearchResult<'a> {
+pub fn search_cities<'a>(search_data: &'a CitySearchData<'a>, search_query: &CitySearchQuery, start_index: usize, max_items: usize) -> CitySearchResult<'a> {
     let started = std::time::Instant::now();
     let mut items = search_data.search_items
         .par_iter()
@@ -98,7 +99,7 @@ pub fn search_cities<'a>(search_data: &'a CitySearchData<'a>, search_query: &Cit
 
     items.sort_by(|a, b| b.score.total_cmp(&a.score));
     CitySearchResult {
-        items: items.into_iter().take(10).collect::<Vec<_>>(),
+        items: items.into_iter().skip(start_index).take(max_items).collect::<Vec<_>>(),
         elapsed_ms: started.elapsed().as_millis() as u32,
         cache_hit_rate_percent: 100.0 * (hit as f32 / (hit + miss) as f32),
     }

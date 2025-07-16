@@ -93,9 +93,9 @@ struct ClimateScoredItem<'a> {
     diff: f32,
 }
 
-pub fn search_climate<'a>(data: &'a ClimateSearchData, id: usize) -> ClimateSearchResult<'a> {
+pub fn search_climate<'a>(data: &'a ClimateSearchData, city_id: usize, start_index: usize, max_items: usize) -> ClimateSearchResult<'a> {
     let started = std::time::Instant::now();
-    let query_maybe = &data.items.get(id);
+    let query_maybe = &data.items.get(city_id);
     if query_maybe.is_none() {
         return ClimateSearchResult {
             items: vec![],
@@ -108,7 +108,7 @@ pub fn search_climate<'a>(data: &'a ClimateSearchData, id: usize) -> ClimateSear
     let min_chord_length = arc_length_to_chord_length(200.0);
     let min_chord_length_sq = min_chord_length * min_chord_length;
 
-    let (scored_items, max_diff) = score_items(&data.items, query);
+    let (scored_items, max_diff) = score_and_pre_filter_items(&data.items, query);
 
     let mut filtered_items = Vec::<ClimateScoredItem>::new();
 
@@ -125,12 +125,16 @@ pub fn search_climate<'a>(data: &'a ClimateSearchData, id: usize) -> ClimateSear
             get_cartesian_distance_km_squared(&item.cartesian_xyz, &existing_res_it.cartesian_xyz) >= min_chord_length_sq
         ) {
             filtered_items.push(item);
+            if filtered_items.len() >= start_index + max_items {
+                break;
+            }
         }
     }
 
-    eprintln!("Found {} results", filtered_items.len());
+    eprintln!("Selected {} results", filtered_items.len());
 
     let result_items = filtered_items.into_iter()
+        .skip(start_index)
         .map(|item| ClimateSearchResultItem {
             id: item.id,
             city: item.city,
@@ -144,7 +148,7 @@ pub fn search_climate<'a>(data: &'a ClimateSearchData, id: usize) -> ClimateSear
             ),
             similarity_percent: 100.0 * (1.0 - item.diff / max_diff),
         })
-        .take(20)
+        .take(max_items)
         .collect::<Vec<_>>();
 
     ClimateSearchResult {
@@ -153,7 +157,7 @@ pub fn search_climate<'a>(data: &'a ClimateSearchData, id: usize) -> ClimateSear
     }
 }
 
-fn score_items<'a>(items: &'a Vec<ClimateSearchItem>, query: &'a ClimateSearchItem) -> (Vec<ClimateScoredItem<'a>>, f32) {
+fn score_and_pre_filter_items<'a>(items: &'a Vec<ClimateSearchItem>, query: &'a ClimateSearchItem) -> (Vec<ClimateScoredItem<'a>>, f32) {
     let scored_items = items.par_iter().enumerate()
         .map(|(index, item)| ClimateScoredItem {
             id: index,
@@ -167,13 +171,13 @@ fn score_items<'a>(items: &'a Vec<ClimateSearchItem>, query: &'a ClimateSearchIt
         .max_by(|a, b| a.diff.total_cmp(&b.diff))
         .unwrap().diff;
 
-    let mut scored_above_half_sorted = scored_items.into_par_iter()
+    let mut pre_filtered = scored_items.into_par_iter()
         .filter(|item| item.diff < max_diff / 2.0)
         .collect::<Vec<_>>();
     
-    scored_above_half_sorted.par_sort_by(|a, b| a.diff.total_cmp(&b.diff));
+    pre_filtered.par_sort_by(|a, b| a.diff.total_cmp(&b.diff));
 
-    (scored_above_half_sorted, max_diff)
+    (pre_filtered, max_diff)
 }
 
 fn get_climate_diff(item: &ClimateSearchItem, query: &ClimateSearchItem) -> f32 {
