@@ -5,6 +5,44 @@ use syn::{parse_macro_input, Data, DeriveInput, Fields, PathArguments, Type};
 /// Generates a struct where `Vec<String>` is replaced with `|`-concatenated String.
 /// Input is validated to be non-empty and not contain `|`.
 /// Vec of other types are not supported.
+/// 
+/// # Example
+/// 
+/// ```ignore
+/// // Original
+/// #[derive(CsvFriendly)]
+/// struct Foo {
+///     a: u32,
+///     b: Vec<String>,
+/// }
+/// 
+/// // Generated
+/// struct FooCsvFriendly {
+///     a: u32,
+///     b: String,
+/// }
+/// 
+/// From<FooCsvFriendly> for Foo {
+///     fn from(csv_friendly: FooCsvFriendly) -> Self {
+///         Self {
+///             a: csv_friendly.a,
+///             b: csv_friendly.b.split('|').map(|s| s.into()).collect(),
+///         }
+///     }
+/// }
+/// 
+/// From<Foo> for FooCsvFriendly {
+///     fn from(orig: Foo) -> Self {
+///         let validate_and_join = |v: Vec<String>| {
+///             // ...
+///         }
+///         Self {
+///             a: orig.a,
+///             b: validate_and_join(orig.b),
+///         }
+///     }
+/// }   
+/// ```
 #[proc_macro_derive(CsvFriendly)]
 pub fn csv_friendly(token_input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(token_input as DeriveInput);
