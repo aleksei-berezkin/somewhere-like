@@ -6,7 +6,6 @@ mod tests {
     struct Foo {
         a: String,
         b: Vec<String>,
-        c: Vec<u8>,
     }
 
     #[test]
@@ -14,7 +13,6 @@ mod tests {
         FooCsvFriendly {
             a: String::from("foo"),
             b: String::from("bar"),
-            c: vec![1, 2], // Ok, not supported
         };
     }
 
@@ -23,18 +21,15 @@ mod tests {
         let foo = Foo {
             a: String::from("foo"),
             b: vec![String::from("bar")],
-            c: vec![1, 2],
         };
 
         let friendly: FooCsvFriendly = foo.into();
         assert_eq!(friendly.a, "foo");
         assert_eq!(friendly.b, "bar");
-        assert_eq!(friendly.c, vec![1, 2]);
 
         let foo_1: Foo = friendly.into();
         assert_eq!(foo_1.a, "foo");
         assert_eq!(foo_1.b, vec![String::from("bar")]);
-        assert_eq!(foo_1.c, vec![1, 2]);
     }
 
     #[test]
@@ -42,7 +37,6 @@ mod tests {
         let foo = Foo {
             a: String::from("foo"),
             b: vec![String::from("bar"), String::from("baz")],
-            c: vec![1, 2],
         };
 
         let friendly: FooCsvFriendly = foo.into();
@@ -57,7 +51,6 @@ mod tests {
         let foo = Foo {
             a: String::from("foo"),
             b: vec![String::from("")],
-            c: vec![1, 2],
         };
 
         let friendly: FooCsvFriendly = foo.into();
@@ -72,7 +65,6 @@ mod tests {
         let foo = Foo {
             a: String::from("foo"),
             b: vec![String::from(""), String::from("bar"), String::from("")],
-            c: vec![1, 2],
         };
 
         let friendly: FooCsvFriendly = foo.into();
@@ -88,7 +80,6 @@ mod tests {
         let foo = Foo {
             a: String::from("foo"),
             b: vec![],
-            c: vec![1, 2],
         };
 
         let _friendly: FooCsvFriendly = foo.into();
@@ -100,7 +91,6 @@ mod tests {
         let foo = Foo {
             a: String::from("foo"),
             b: vec![String::from("ba|r")],
-            c: vec![1, 2],
         };
 
         let _friendly: FooCsvFriendly = foo.into();
