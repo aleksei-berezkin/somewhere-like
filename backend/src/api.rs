@@ -21,6 +21,26 @@ pub struct CitySearchRequest {
 pub const SEARCH_DEFAULT_START_INDEX: usize = 0;
 pub const SEARCH_DEFAULT_MAX_ITEMS: usize = 10;
 
+/// Example:
+/// `{"command": "searchClimate", "cityId": 34040, "startIndex": 0, "maxItems": 5}`
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClimateSearchRequest {
+    pub city_id: usize,
+    pub start_index: Option<usize>,
+    pub max_items: Option<usize>,
+}
+
+pub const CLIMATE_DEFAULT_START_INDEX: usize = 0;
+pub const CLIMATE_DEFAULT_MAX_ITEMS: usize = 100;
+
+#[derive(Debug, Serialize)]
+#[serde(tag = "command", rename_all = "camelCase")]
+pub enum CityResult<'a> {
+    SearchCity(CitySearchResult<'a>),
+    SearchClimate(ClimateSearchResult<'a>),
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CitySearchResult<'a> {
@@ -41,18 +61,6 @@ pub struct CitySearchResultItem<'a> {
     pub country: &'a str,
 }
 
-/// Example:
-/// `{"command": "searchClimate", "cityId": 34040, "startIndex": 0, "maxItems": 5}`
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ClimateSearchRequest {
-    pub city_id: usize,
-    pub start_index: Option<usize>,
-    pub max_items: Option<usize>,
-}
-
-pub const CLIMATE_DEFAULT_START_INDEX: usize = 0;
-pub const CLIMATE_DEFAULT_MAX_ITEMS: usize = 100;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]

@@ -1,12 +1,13 @@
 mod climate_search;
 mod search;
 mod api;
-use std::io::Write;
+use std::{io::Write, process::ExitCode};
 
 use common::{city_csv::read_cities, util::eprintln_memory_usage};
 use search::{make_search_data, search_cities};
 
-use crate::{api::{CityCommand, CitySearchRequest, ClimateSearchRequest, CLIMATE_DEFAULT_MAX_ITEMS, CLIMATE_DEFAULT_START_INDEX, SEARCH_DEFAULT_MAX_ITEMS, SEARCH_DEFAULT_START_INDEX}, climate_search::{make_climate_search_data, search_climate}, search::make_search_query};
+use crate::{api::{CityCommand, CityResult, CitySearchRequest, ClimateSearchRequest, CLIMATE_DEFAULT_MAX_ITEMS, CLIMATE_DEFAULT_START_INDEX, SEARCH_DEFAULT_MAX_ITEMS, SEARCH_DEFAULT_START_INDEX}, climate_search::{make_climate_search_data, search_climate, ClimateSearchData}, search::{make_search_query, CitySearchData}};
+
 
 macro_rules! eprintln_json_items {
     ($items: expr) => {
@@ -17,12 +18,27 @@ macro_rules! eprintln_json_items {
     };
 }
 
-fn main() {
+fn main() -> ExitCode {
     let cities = read_cities();
     let search_data = make_search_data(&cities);
     let climate_search_data = make_climate_search_data(&cities);
 
     eprintln_memory_usage();
+
+    let cmd_arg = std::env::args().nth(1);
+    if let Some(cmd_arg_str) = cmd_arg {
+        let command = parse_json_command(&cmd_arg_str);
+        if command.is_none() {
+            eprintln!("Unknown command: {}", cmd_arg_str);
+            return ExitCode::FAILURE;
+        }
+        let exec_res = execute_command(command.unwrap(), &search_data, &climate_search_data);
+        serde_json::to_writer(std::io::stdout(), &exec_res).unwrap();
+        std::io::stdout().write(b"\n").unwrap();
+        std::io::stdout().flush().unwrap();
+        return ExitCode::SUCCESS
+    }
+
     eprintln!("Enter city name to search by name, or id to search by climate; or use json messages");
 
     loop {
@@ -34,65 +50,35 @@ fn main() {
             continue;
         }
 
-        let command = parse_command(command_str);
+        let command = parse_json_or_simple_command(command_str);
+        if command.is_none() {
+            eprintln!("Unknown command: {}", command_str);
+            continue;
+        }
 
         let started = std::time::Instant::now();
-        match command.command {
-            CityCommand::SearchCity(req) => {
-                let city_search_query = make_search_query(&req.query);
-                let city_search_result = search_cities(
-                    &search_data,
-                    &city_search_query,
-                    req.start_index.unwrap_or(SEARCH_DEFAULT_START_INDEX),
-                    req.max_items.unwrap_or(SEARCH_DEFAULT_MAX_ITEMS),
-                );
-                if command.is_json {
-                    serde_json::to_writer(std::io::stdout(), &city_search_result).unwrap()
-                } else {
-                    eprintln_json_items!(city_search_result.items)
-                }
-            },
-            CityCommand::SearchClimate(req) => {
-                let climate_search_result = search_climate(
-                    &climate_search_data,
-                    req.city_id,
-                    req.start_index.unwrap_or(CLIMATE_DEFAULT_START_INDEX),
-                    req.max_items.unwrap_or(CLIMATE_DEFAULT_MAX_ITEMS),
-                );
-                if command.is_json {
-                    serde_json::to_writer(std::io::stdout(), &climate_search_result).unwrap()
-                } else {
-                    eprintln_json_items!(climate_search_result.items)
-                }
-            },
+
+        let result = execute_command(command.unwrap(), &search_data, &climate_search_data);
+        match result {
+            CityResult::SearchCity(res) => eprintln_json_items!(res.items),
+            CityResult::SearchClimate(res) => eprintln_json_items!(res.items),
         }
 
-        if command.is_json {
-            std::io::stdout().write(b"\n").unwrap();
-            std::io::stdout().flush().unwrap();
-        } else {
-            eprintln!("Done \"{}\" in {} ms", command_str, started.elapsed().as_millis());
-        }
+        eprintln!("Done \"{}\" in {} ms", command_str, started.elapsed().as_millis());
     }
 }
 
-
-struct ParsedCommand {
-    command: CityCommand,
-    is_json: bool,
+fn parse_json_command(command_str: &str) -> Option<CityCommand> {
+    serde_json::from_str::<CityCommand>(command_str).ok()
 }
 
-fn parse_command(command_str: &str) -> ParsedCommand {
-    let json_command_res = serde_json::from_str::<CityCommand>(command_str);
-    if let Ok(command) = json_command_res {
-        return ParsedCommand {
-            command,
-            is_json: true,
-        };
+fn parse_json_or_simple_command(command_str: &str) -> Option<CityCommand> {
+    if command_str.starts_with('{') {
+        return parse_json_command(command_str);
     }
 
     let id_maybe: Result<usize, _> = command_str.parse();
-    let command =
+    let simple_cmd =
         if let Ok(id) = id_maybe {
             CityCommand::SearchClimate(ClimateSearchRequest {
                 city_id: id,
@@ -107,8 +93,29 @@ fn parse_command(command_str: &str) -> ParsedCommand {
             })
         };
 
-        return ParsedCommand {
-        command,
-        is_json: false
+    return Some(simple_cmd)
+}
+
+fn execute_command<'a>(command: CityCommand, search_data: &'a CitySearchData, climate_search_data: &'a ClimateSearchData) -> CityResult<'a> {
+    match command {
+        CityCommand::SearchCity(req) => {
+            let city_search_query = make_search_query(&req.query);
+            let search_result = search_cities(
+                &search_data,
+                &city_search_query,
+                req.start_index.unwrap_or(SEARCH_DEFAULT_START_INDEX),
+                req.max_items.unwrap_or(SEARCH_DEFAULT_MAX_ITEMS),
+            );
+            CityResult::SearchCity(search_result)
+        },
+        CityCommand::SearchClimate(req) => {
+            let climate_search_result = search_climate(
+                &climate_search_data,
+                req.city_id,
+                req.start_index.unwrap_or(CLIMATE_DEFAULT_START_INDEX),
+                req.max_items.unwrap_or(CLIMATE_DEFAULT_MAX_ITEMS),
+            );
+            CityResult::SearchClimate(climate_search_result)
+        },
     }
 }
