@@ -36,22 +36,22 @@ pub const CLIMATE_DEFAULT_MAX_ITEMS: usize = 100;
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "command", rename_all = "camelCase")]
-pub enum CityResult<'a> {
-    SearchCity(CitySearchResult<'a>),
-    SearchClimate(ClimateSearchResult<'a>),
+pub enum CityResponse<'a> {
+    SearchCity(CitySearchResponse<'a>),
+    SearchClimate(ClimateSearchResponse<'a>),
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CitySearchResult<'a> {
-    pub items: Vec<CitySearchResultItem<'a>>,
+pub struct CitySearchResponse<'a> {
+    pub items: Vec<CitySearchResponseItem<'a>>,
     pub elapsed_ms: u32,
     pub cache_hit_rate_percent: f32,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CitySearchResultItem<'a> {
+pub struct CitySearchResponseItem<'a> {
     pub id: usize,
     pub score: f32,
     pub matched_name: &'a str,
@@ -64,14 +64,14 @@ pub struct CitySearchResultItem<'a> {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ClimateSearchResult<'a> {
-    pub items: Vec<ClimateSearchResultItem<'a>>,
+pub struct ClimateSearchResponse<'a> {
+    pub items: Vec<ClimateSearchResponseItem<'a>>,
     pub elapsed_ms: u32,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ClimateSearchResultItem<'a> {
+pub struct ClimateSearchResponseItem<'a> {
     pub id: usize,
     pub city: &'a City,
     pub distance_km: f64,

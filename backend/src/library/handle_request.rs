@@ -42,32 +42,32 @@ fn parse_request(req_str: &str, simple_allowed: bool) -> Result<CityRequest, Str
 }
 
 
-fn handle_request_impl<'a>(request: CityRequest) -> CityResult<'a> {
+fn handle_request_impl<'a>(request: CityRequest) -> CityResponse<'a> {
     match request {
         CityRequest::SearchCity(req) => {
             let cities = &CACHED_DATA.cities;
             let search_data = &CACHED_DATA.search_data;
             let city_search_query = make_search_query(&req.query);
-            let search_result = search_cities(
+            let search_response = search_cities(
                 cities,
                 search_data,
                 &city_search_query,
                 req.start_index.unwrap_or(SEARCH_DEFAULT_START_INDEX),
                 req.max_items.unwrap_or(SEARCH_DEFAULT_MAX_ITEMS),
             );
-            CityResult::SearchCity(search_result)
+            CityResponse::SearchCity(search_response)
         },
         CityRequest::SearchClimate(req) => {
             let cities = &CACHED_DATA.cities;
             let climate_search_data = &CACHED_DATA.climate_search_data;
-            let climate_search_result = search_climate(
+            let climate_search_response = search_climate(
                 cities,
                 climate_search_data,
                 req.city_id,
                 req.start_index.unwrap_or(CLIMATE_DEFAULT_START_INDEX),
                 req.max_items.unwrap_or(CLIMATE_DEFAULT_MAX_ITEMS),
             );
-            CityResult::SearchClimate(climate_search_result)
+            CityResponse::SearchClimate(climate_search_response)
         },
     }
 }

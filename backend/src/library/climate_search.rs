@@ -90,11 +90,11 @@ struct ClimateScoredItem<'a> {
     diff: f32,
 }
 
-pub fn search_climate<'a>(cities: &'a Vec<City>, data: &'a ClimateSearchData, city_id: usize, start_index: usize, max_items: usize) -> ClimateSearchResult<'a> {
+pub fn search_climate<'a>(cities: &'a Vec<City>, data: &'a ClimateSearchData, city_id: usize, start_index: usize, max_items: usize) -> ClimateSearchResponse<'a> {
     let started = std::time::Instant::now();
     let query_maybe = &data.items.get(city_id);
     if query_maybe.is_none() {
-        return ClimateSearchResult {
+        return ClimateSearchResponse {
             items: vec![],
             elapsed_ms: started.elapsed().as_millis() as u32,
         };
@@ -132,7 +132,7 @@ pub fn search_climate<'a>(cities: &'a Vec<City>, data: &'a ClimateSearchData, ci
 
     let result_items = filtered_items.into_iter()
         .skip(start_index)
-        .map(|item| ClimateSearchResultItem {
+        .map(|item| ClimateSearchResponseItem {
             id: item.id,
             city: item.city,
             distance_km: round_0_1_and_assert_finite(
@@ -148,7 +148,7 @@ pub fn search_climate<'a>(cities: &'a Vec<City>, data: &'a ClimateSearchData, ci
         .take(max_items)
         .collect::<Vec<_>>();
 
-    ClimateSearchResult {
+    ClimateSearchResponse {
         items: result_items,
         elapsed_ms: started.elapsed().as_millis() as u32,
     }

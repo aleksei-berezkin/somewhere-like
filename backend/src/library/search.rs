@@ -78,7 +78,7 @@ pub fn make_search_query(query: &str) -> CitySearchQuery {
 }
 
 
-pub fn search_cities<'a>(cities: &'a Vec<City>, search_data: &'a CitySearchData, search_query: &CitySearchQuery, start_index: usize, max_items: usize) -> CitySearchResult<'a> {
+pub fn search_cities<'a>(cities: &'a Vec<City>, search_data: &'a CitySearchData, search_query: &CitySearchQuery, start_index: usize, max_items: usize) -> CitySearchResponse<'a> {
     let started = std::time::Instant::now();
     let mut items = search_data.search_items
         .par_iter()
@@ -94,7 +94,7 @@ pub fn search_cities<'a>(cities: &'a Vec<City>, search_data: &'a CitySearchData,
     let miss = search_query.cache_hit_miss_count.1.load(Ordering::Relaxed);
 
     items.sort_by(|a, b| b.score.total_cmp(&a.score));
-    CitySearchResult {
+    CitySearchResponse {
         items: items.into_iter().skip(start_index).take(max_items).collect::<Vec<_>>(),
         elapsed_ms: started.elapsed().as_millis() as u32,
         cache_hit_rate_percent: 100.0 * (hit as f32 / (hit + miss) as f32),
@@ -113,7 +113,7 @@ fn score_city<'a>(
     city_search_query: &CitySearchQuery,
     cache: &ThreadLocal<RefCell<Vec<f32>>>,
     cache_hit_miss_count: &(AtomicUsize, AtomicUsize),
-) -> CitySearchResultItem<'a> {
+) -> CitySearchResponseItem<'a> {
     city_search_query.name_rest_variants.iter()
         .flat_map(|query_name_and_rest| {
             search_item.names_lowercase.iter().enumerate()
@@ -129,7 +129,7 @@ fn score_city<'a>(
                         city_intern_registry,
                         &city_search_query.intern_registry
                     );
-                    CitySearchResultItem {
+                    CitySearchResponseItem {
                         id: search_item.id,
                         score,
                         matched_name: &city.names[city_name_index_and_name.0],
