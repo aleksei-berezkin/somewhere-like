@@ -5,6 +5,7 @@
         "Interner",
         "jaro",
         "minmax",
+        "srad",
         "strsim",
         "sysinfo",
         "tmax",

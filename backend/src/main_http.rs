@@ -18,6 +18,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let listener = TcpListener::bind(addr).await?;
 
+    eprintln!("Listening on http://{}", addr);
+
     loop {
         let (stream, _) = listener.accept().await?;
         let io = TokioIo::new(stream);
