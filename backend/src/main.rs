@@ -3,7 +3,7 @@ mod search;
 mod api;
 use std::{io::Write, process::ExitCode};
 
-use common::{city_csv::read_cities, util::eprintln_memory_usage};
+use common::{city::City, city_csv::read_cities, util::eprintln_memory_usage};
 use search::{make_search_data, search_cities};
 
 use crate::{api::{CityCommand, CityResult, CitySearchRequest, ClimateSearchRequest, CLIMATE_DEFAULT_MAX_ITEMS, CLIMATE_DEFAULT_START_INDEX, SEARCH_DEFAULT_MAX_ITEMS, SEARCH_DEFAULT_START_INDEX}, climate_search::{make_climate_search_data, search_climate, ClimateSearchData}, search::{make_search_query, CitySearchData}};
@@ -32,7 +32,7 @@ fn main() -> ExitCode {
             eprintln!("Unknown command: {}", cmd_arg_str);
             return ExitCode::FAILURE;
         }
-        let exec_res = execute_command(command.unwrap(), &search_data, &climate_search_data);
+        let exec_res = execute_command(command.unwrap(), &cities, &search_data, &climate_search_data);
         serde_json::to_writer(std::io::stdout(), &exec_res).unwrap();
         std::io::stdout().write(b"\n").unwrap();
         std::io::stdout().flush().unwrap();
@@ -58,7 +58,7 @@ fn main() -> ExitCode {
 
         let started = std::time::Instant::now();
 
-        let result = execute_command(command.unwrap(), &search_data, &climate_search_data);
+        let result = execute_command(command.unwrap(), &cities, &search_data, &climate_search_data);
         match result {
             CityResult::SearchCity(res) => eprintln_json_items!(res.items),
             CityResult::SearchClimate(res) => eprintln_json_items!(res.items),
@@ -96,12 +96,13 @@ fn parse_json_or_simple_command(command_str: &str) -> Option<CityCommand> {
     return Some(simple_cmd)
 }
 
-fn execute_command<'a>(command: CityCommand, search_data: &'a CitySearchData, climate_search_data: &'a ClimateSearchData) -> CityResult<'a> {
+fn execute_command<'a>(command: CityCommand, cities: &'a Vec<City>, search_data: &'a CitySearchData, climate_search_data: &'a ClimateSearchData) -> CityResult<'a> {
     match command {
         CityCommand::SearchCity(req) => {
             let city_search_query = make_search_query(&req.query);
             let search_result = search_cities(
-                &search_data,
+                cities,
+                search_data,
                 &city_search_query,
                 req.start_index.unwrap_or(SEARCH_DEFAULT_START_INDEX),
                 req.max_items.unwrap_or(SEARCH_DEFAULT_MAX_ITEMS),
@@ -110,6 +111,7 @@ fn execute_command<'a>(command: CityCommand, search_data: &'a CitySearchData, cl
         },
         CityCommand::SearchClimate(req) => {
             let climate_search_result = search_climate(
+                &cities,
                 &climate_search_data,
                 req.city_id,
                 req.start_index.unwrap_or(CLIMATE_DEFAULT_START_INDEX),

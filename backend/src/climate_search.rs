@@ -4,16 +4,15 @@ use rayon::prelude::*;
 
 use crate::api::{ClimateSearchResult, ClimateSearchResultItem};
 
-pub struct ClimateSearchData<'a> {
+pub struct ClimateSearchData {
     /// Order: same as in the Cities list
-    items: Vec<ClimateSearchItem<'a>>,
+    items: Vec<ClimateSearchItem>,
 }
 
 #[derive(Debug)]
-struct ClimateSearchItem<'a> {
+struct ClimateSearchItem {
     /// Index in the Cities list
     id: usize,
-    city: &'a City,
     cartesian_xyz: [f64; 3],
     relative_minmax: ClimateMinMax,
 }
@@ -28,7 +27,7 @@ struct ClimateMinMax {
     ws: (f32, f32),
 }
 
-pub fn make_climate_search_data<'a>(cities: &'a Vec<City>) -> ClimateSearchData<'a> {
+pub fn make_climate_search_data(cities: &Vec<City>) -> ClimateSearchData {
     let start = std::time::Instant::now();
 
     let total_minmax = cities.par_iter()
@@ -56,7 +55,6 @@ pub fn make_climate_search_data<'a>(cities: &'a Vec<City>) -> ClimateSearchData<
             };
             ClimateSearchItem {
                 id: index,
-                city,
                 cartesian_xyz: get_cartesian_xyz(city.latitude, city.longitude),
                 relative_minmax,
             }
@@ -93,7 +91,7 @@ struct ClimateScoredItem<'a> {
     diff: f32,
 }
 
-pub fn search_climate<'a>(data: &'a ClimateSearchData, city_id: usize, start_index: usize, max_items: usize) -> ClimateSearchResult<'a> {
+pub fn search_climate<'a>(cities: &'a Vec<City>, data: &'a ClimateSearchData, city_id: usize, start_index: usize, max_items: usize) -> ClimateSearchResult<'a> {
     let started = std::time::Instant::now();
     let query_maybe = &data.items.get(city_id);
     if query_maybe.is_none() {
@@ -108,13 +106,13 @@ pub fn search_climate<'a>(data: &'a ClimateSearchData, city_id: usize, start_ind
     let min_chord_length = arc_length_to_chord_length(200.0);
     let min_chord_length_sq = min_chord_length * min_chord_length;
 
-    let (scored_items, max_diff) = score_and_pre_filter_items(&data.items, query);
+    let (scored_items, max_diff) = score_and_pre_filter_items(cities,data, query);
 
     let mut filtered_items = Vec::<ClimateScoredItem>::new();
 
     filtered_items.push(ClimateScoredItem {
         id: query.id,
-        city: query.city,
+        city: &cities[query.id],
         cartesian_xyz: &query.cartesian_xyz,
         diff: 0.0,
     });
@@ -142,8 +140,8 @@ pub fn search_climate<'a>(data: &'a ClimateSearchData, city_id: usize, start_ind
                 get_arc_distance_km(
                     item.city.latitude,
                     item.city.longitude,
-                    query.city.latitude,
-                    query.city.longitude,
+                    cities[query.id].latitude,
+                    cities[query.id].longitude,
                 )
             ),
             similarity_percent: 100.0 * (1.0 - item.diff / max_diff),
@@ -157,11 +155,11 @@ pub fn search_climate<'a>(data: &'a ClimateSearchData, city_id: usize, start_ind
     }
 }
 
-fn score_and_pre_filter_items<'a>(items: &'a Vec<ClimateSearchItem>, query: &'a ClimateSearchItem) -> (Vec<ClimateScoredItem<'a>>, f32) {
-    let scored_items = items.par_iter().enumerate()
+fn score_and_pre_filter_items<'a>(cities: &'a Vec<City>, data: &'a ClimateSearchData, query: &'a ClimateSearchItem) -> (Vec<ClimateScoredItem<'a>>, f32) {
+    let scored_items = data.items.par_iter().enumerate()
         .map(|(index, item)| ClimateScoredItem {
             id: index,
-            city: item.city,
+            city: &cities[index],
             cartesian_xyz: &item.cartesian_xyz,
             diff: get_climate_diff(item, query),
         })

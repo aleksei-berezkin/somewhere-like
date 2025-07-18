@@ -7,17 +7,15 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use thread_local::ThreadLocal;
 
 
-pub struct CitySearchData<'a> {
-    /// Order: same as in the Cities list
-    search_items: Vec<CitySearchItem<'a>>,
+pub struct CitySearchData {
+    search_items: Vec<CitySearchItem>,
     intern_registry: InternRegistry,
 }
 
 #[derive(Debug)]
-struct CitySearchItem<'a> {
+struct CitySearchItem {
     /// Simply index in the cities list
     id: usize,
-    city: &'a City,
     names_lowercase: Vec<InternId>,
     admin_unit_lowercase: Option<InternId>,
     country_lowercase: InternId,
@@ -40,7 +38,6 @@ pub fn make_search_data(cities: &Vec<City>) -> CitySearchData {
             let country_lowercase = intern_lowercase(&city.country);
             CitySearchItem {
                 id: index,
-                city,
                 names_lowercase,
                 admin_unit_lowercase,
                 country_lowercase,
@@ -82,13 +79,13 @@ pub fn make_search_query(query: &str) -> CitySearchQuery {
 }
 
 
-pub fn search_cities<'a>(search_data: &'a CitySearchData<'a>, search_query: &CitySearchQuery, start_index: usize, max_items: usize) -> CitySearchResult<'a> {
+pub fn search_cities<'a>(cities: &'a Vec<City>, search_data: &'a CitySearchData, search_query: &CitySearchQuery, start_index: usize, max_items: usize) -> CitySearchResult<'a> {
     let started = std::time::Instant::now();
     let mut items = search_data.search_items
         .par_iter()
         .map(
             |item| {
-                score_city(item, &search_data.intern_registry, search_query, &search_query.cache, &search_query.cache_hit_miss_count)
+                score_city(&cities[item.id], item, &search_data.intern_registry, search_query, &search_query.cache, &search_query.cache_hit_miss_count)
             }
         )
         .filter(|item| item.score > 0.85)
@@ -111,6 +108,7 @@ const ADMIN_UNIT_WEIGHT: f32 = 0.25;
 const COUNTRY_WEIGHT: f32 = 0.25;
 
 fn score_city<'a>(
+    city: &'a City,
     search_item: &'a CitySearchItem,
     city_intern_registry: &InternRegistry,
     city_search_query: &CitySearchQuery,
@@ -125,7 +123,7 @@ fn score_city<'a>(
                         city_name_index_and_name,
                         &search_item.admin_unit_lowercase,
                         &search_item.country_lowercase,
-                        search_item.city.population,
+                        city.population,
                         query_name_and_rest,
                         cache,
                         cache_hit_miss_count,
@@ -135,11 +133,11 @@ fn score_city<'a>(
                     CitySearchResultItem {
                         id: search_item.id,
                         score,
-                        matched_name: &search_item.city.names[city_name_index_and_name.0],
-                        name: &search_item.city.names[0],
-                        population: search_item.city.population,
-                        admin_unit: &search_item.city.admin_unit,
-                        country: &search_item.city.country
+                        matched_name: &city.names[city_name_index_and_name.0],
+                        name: &city.names[0],
+                        population: city.population,
+                        admin_unit: &city.admin_unit,
+                        country: &city.country
                     }
                 })
         })
