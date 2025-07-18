@@ -4,9 +4,10 @@
   "description": "Find a place with a similar climate",
   "main": "index.js",
   "scripts": {
-    "back": "cargo run -p backend --release",
-    "back@test1": "cargo run -p backend --release \"{\\\"command\\\": \\\"searchCity\\\", \\\"query\\\": \\\"Tokyo\\\", \\\"startIndex\\\": 0, \\\"maxItems\\\": 8}\"",
-    "back@test2": "cargo run -p backend --release \"{\\\"command\\\": \\\"searchClimate\\\", \\\"cityId\\\": 34040, \\\"startIndex\\\": 4, \\\"maxItems\\\": 8}\"",
+    "back": "cargo run -p backend --release --bin cmd",
+    "back@test1": "cargo run -p backend --bin cmd --release \"{\\\"command\\\": \\\"searchCity\\\", \\\"query\\\": \\\"Tokyo\\\", \\\"startIndex\\\": 0, \\\"maxItems\\\": 8}\"",
+    "back@test2": "cargo run -p backend --bin cmd --release \"{\\\"command\\\": \\\"searchClimate\\\", \\\"cityId\\\": 34040, \\\"startIndex\\\": 4, \\\"maxItems\\\": 8}\"",
+    "back@http": "cargo run -p backend --release --bin http",
     "prep": "npm run prep@clean ; npm run prep@impl",
     "prep@clean": "rm data-out/cities-*.csv",
     "prep@impl": "cargo run -p preprocessing",

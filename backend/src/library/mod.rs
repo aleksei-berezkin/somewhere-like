@@ -1,6 +1,10 @@
+pub mod api;
+pub mod climate_search;
 pub mod earth;
+pub mod handle_request;
 pub mod intern;
 pub mod jaro;
 pub mod minmax;
+pub mod search;
 pub mod split;
 pub mod test_util;

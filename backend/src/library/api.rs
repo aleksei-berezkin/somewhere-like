@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
 #[serde(tag = "command", rename_all = "camelCase")]
-pub enum CityCommand {
+pub enum CityRequest {
     SearchCity(CitySearchRequest),
     SearchClimate(ClimateSearchRequest),
 }
