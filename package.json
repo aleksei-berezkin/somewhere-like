@@ -4,7 +4,7 @@
   "description": "Find a place with a similar climate",
   "main": "index.js",
   "scripts": {
-    "back": "cargo run -p backend --release --bin cmd",
+    "back": "cargo run -p backend --release --bin cli",
     "back@http": "cargo run -p backend --release --bin http",
     "prep": "npm run prep@clean ; npm run prep@impl",
     "prep@clean": "rm data-out/cities-*.csv",

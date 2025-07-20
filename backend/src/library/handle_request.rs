@@ -4,27 +4,23 @@ use common::{city::City, city_csv::read_cities};
 use once_cell::sync::Lazy;
 
 
-pub fn handle_request(req_str: String, simple_allowed: bool) -> Result<String, String> {
-    let request = parse_request(&req_str, simple_allowed);
-    if let Err(msg) = request {
-        return Err(msg)
-    }
-    let result = handle_request_impl(request.unwrap());
-    Ok(serde_json::to_string(&result).unwrap())
+pub fn handle_request(req_str: String, is_cli: bool) -> Result<String, String> {
+    parse_request(&req_str, is_cli)
+        .and_then(|request| {
+            let response = handle_request_impl(request);
+            Ok(to_string_response(response, is_cli))
+        })
 }
 
-fn parse_request(req_str: &str, simple_allowed: bool) -> Result<CityRequest, String> {
-    if let Ok(req_json) = serde_json::from_str::<CityRequest>(req_str) {
-        return Ok(req_json)
+fn parse_request(req_str: &str, is_cli: bool) -> Result<CityRequest, String> {
+    let simple_cmd_allowed = is_cli && !req_str.contains("{") && !req_str.contains("}");
+    let req_json_res = serde_json::from_str::<CityRequest>(req_str).map_err(|e| e.to_string());
+    if req_json_res.is_ok() || !simple_cmd_allowed {
+        return req_json_res
     }
 
-    if !simple_allowed || req_str.contains("{") || req_str.contains("}") {
-        return Err(format!("Invalid request: {}", req_str))
-    }
-
-    let id_maybe: Result<usize, _> = req_str.parse();
     let simple_req =
-        if let Ok(id) = id_maybe {
+        if let Ok(id) = req_str.parse() {
             CityRequest::SearchClimate(ClimateSearchRequest {
                 city_id: id,
                 start_index: None,
@@ -38,7 +34,7 @@ fn parse_request(req_str: &str, simple_allowed: bool) -> Result<CityRequest, Str
             })
         };
 
-    return Ok(simple_req)
+    Ok(simple_req)
 }
 
 
@@ -84,4 +80,31 @@ struct CachedData {
     cities: Vec<City>,
     search_data: CitySearchData,
     climate_search_data: ClimateSearchData,
+}
+
+macro_rules! to_str_items {
+    ($items: expr) => {
+        $items.into_iter()
+            .map(|it| serde_json::to_string(&it).unwrap())
+            .collect::<Vec<String>>()
+            .join("\n")
+    };
+}
+
+fn to_string_response<'a>(response: CityResponse<'a>, is_cli: bool) -> String {
+    if is_cli {
+        match response {
+            CityResponse::SearchCity(search_response) =>{
+                let items_str = to_str_items!(search_response.items);
+                format!("{}\ncache_hit_rate_percent: {}",
+                    items_str,
+                    search_response.cache_hit_rate_percent,
+                )
+            },
+            CityResponse::SearchClimate(climate_search_response) =>
+                to_str_items!(climate_search_response.items),
+        }
+    } else {
+        serde_json::to_string(&response).unwrap()
+    }
 }

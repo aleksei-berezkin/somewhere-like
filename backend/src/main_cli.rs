@@ -3,15 +3,6 @@ use common::util::eprintln_memory_usage;
 use backend::library::handle_request::*;
 
 
-// macro_rules! eprintln_json_items {
-//     ($items: expr) => {
-//         $items.into_iter().for_each(|f| {
-//             serde_json::to_writer(std::io::stderr(), &f).unwrap();
-//             eprintln!();
-//         })
-//     };
-// }
-
 fn main() -> ExitCode {
     eprintln_memory_usage();
 
@@ -48,7 +39,7 @@ fn main() -> ExitCode {
         let response = handle_request(command_str.into(), true);
         match response {
             Ok(msg) => {
-                eprintln!("{}\n", msg);
+                eprintln!("{}", msg);
                 eprintln!("Done \"{}\" in {} ms", command_str, started.elapsed().as_millis())
             },
             Err(msg) => eprintln!("{}", msg),
