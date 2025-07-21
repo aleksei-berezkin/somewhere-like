@@ -1,6 +1,6 @@
 use crate::library::{api::*, climate_search::*, search::*};
 
-use common::{city::City, city_csv::read_cities};
+use common::{city::City, city_csv::read_cities, util::eprintln_memory_usage};
 use once_cell::sync::Lazy;
 
 
@@ -73,6 +73,7 @@ static CACHED_DATA: Lazy<CachedData> = Lazy::new(|| {
     let search_data = make_search_data(&cities);
     let climate_search_data = make_climate_search_data(&cities);
     let data = CachedData { cities, search_data, climate_search_data };
+    eprintln_memory_usage();
     data
 });
 
@@ -94,15 +95,21 @@ macro_rules! to_str_items {
 fn to_string_response<'a>(response: CityResponse<'a>, is_cli: bool) -> String {
     if is_cli {
         match response {
-            CityResponse::SearchCity(search_response) =>{
+            CityResponse::SearchCity(search_response) => {
                 let items_str = to_str_items!(search_response.items);
-                format!("{}\ncache_hit_rate_percent: {}",
+                format!("{}\nelapsed_ms: {}, cache_hit_rate_percent: {}",
                     items_str,
+                    search_response.elapsed_ms,
                     search_response.cache_hit_rate_percent,
                 )
             },
-            CityResponse::SearchClimate(climate_search_response) =>
-                to_str_items!(climate_search_response.items),
+            CityResponse::SearchClimate(climate_search_response) => {
+                let items_str = to_str_items!(climate_search_response.items);
+                format!("{}\nelapsed_ms: {}",
+                    items_str,
+                    climate_search_response.elapsed_ms,
+                )
+            }
         }
     } else {
         serde_json::to_string(&response).unwrap()

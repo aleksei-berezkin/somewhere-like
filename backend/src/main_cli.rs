@@ -1,28 +1,7 @@
-use std::{io::Write, process::ExitCode};
-use common::util::eprintln_memory_usage;
 use backend::library::handle_request::*;
 
 
-fn main() -> ExitCode {
-    eprintln_memory_usage();
-
-    let cmd_arg = std::env::args().nth(1);
-    if let Some(cmd_arg_str) = cmd_arg {
-        let response = handle_request(cmd_arg_str, false);
-        match response {
-            Ok(msg) => {
-                std::io::stdout().write(msg.as_bytes()).unwrap();
-                std::io::stdout().write(b"\n").unwrap();
-                std::io::stdout().flush().unwrap();
-                return ExitCode::SUCCESS;
-            },
-            Err(msg) => {
-                eprintln!("{}", msg);
-                return ExitCode::FAILURE;
-            },
-        }
-    }
-
+fn main() {
     eprintln!("Enter city name to search by name, or id to search by climate; or use json messages");
 
     loop {
