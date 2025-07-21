@@ -60,5 +60,38 @@ test('search with country', async () => {
     assert.equal(firstItem.country, 'El Salvador')
 })
 
+test('climate simple', async () => {
+    const response = await fetchApi({
+        command: 'searchClimate',
+        cityId: 14823,
+        maxItems: 2,
+    })
+
+    assert.equal(response.items.length, 2)
+
+    const [firstItem] = response.items
+    assert.equal(firstItem.id, 14823)
+    assert.equal(firstItem.distanceKm, 0)
+    assert.equal(firstItem.similarityPercent, 100)
+    assert.equal(firstItem.city.names[0], 'Munich')
+    assert(firstItem.city.names.includes('München'))
+    assert.equal(firstItem.city.adminUnit, 'Bavaria')
+    assert.equal(firstItem.city.country, 'Germany')
+    assertMonthlyWithin(firstItem.city.climate.humidityMonthly, 50, 80)
+    assertMonthlyWithin(firstItem.city.climate.pptMonthly, 40, 120)
+    assertMonthlyWithin(firstItem.city.climate.sradMonthly, 30, 230)
+    assertMonthlyWithin(firstItem.city.climate.tmaxMonthly, 4, 26)
+    assertMonthlyWithin(firstItem.city.climate.tminMonthly, -3, 15)
+    assertMonthlyWithin(firstItem.city.climate.wsMonthly, 2, 4)
+})
+
+function assertMonthlyWithin(actual: number[], min: number, max: number) {
+    assert.equal(actual.length, 12)
+    assert(
+        actual.every(it => min <= it && it <= max),
+        `actual: ${actual}, min: ${min}, max: ${max}`,
+    )
+}
+
 test.after(() => void subprocess.kill())
 test.run()
