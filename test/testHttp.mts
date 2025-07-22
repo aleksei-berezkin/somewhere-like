@@ -60,10 +60,36 @@ test('search with country', async () => {
     assert.equal(firstItem.country, 'El Salvador')
 })
 
+test('search pages consistency', async () => {
+    const page1 = await fetchApi({
+        command: 'searchCity',
+        query: 'reykjavik',
+        startIndex: 1,
+        maxItems: 2,
+    })
+    assert.notEqual(page1.items[0].country, 'Iceland')
+
+    const page2 = await fetchApi({
+        command: 'searchCity',
+        query: 'reykjavik',
+        startIndex: 3,
+        maxItems: 4,
+    })
+
+    const page12 = await fetchApi({
+        command: 'searchCity',
+        query: 'reykjavik',
+        startIndex: 1,
+        maxItems: 6,
+    });
+
+    assert.deepStrictEqual([...page1.items, ...page2.items], page12.items)
+})
+
 test('climate simple', async () => {
     const response = await fetchApi({
         command: 'searchClimate',
-        cityId: 14823,
+        cityId: 14823, // Munich
         maxItems: 2,
     })
 
@@ -87,11 +113,47 @@ test('climate simple', async () => {
 
 function assertMonthlyWithin(actual: number[], min: number, max: number) {
     assert.equal(actual.length, 12)
+
+    const actualMin = actual.reduce((a, b) => a < b ? a : b)
+    const actualMax = actual.reduce((a, b) => a > b ? a : b)
+
     assert(
-        actual.every(it => min <= it && it <= max),
-        `actual: ${actual}, min: ${min}, max: ${max}`,
+        min <= actualMin && actualMax <= max,
+        `Data not within bounds. ActualMin: ${actualMin}, actualMax: ${actualMax}, min: ${min}, max: ${max}`,
+    )
+
+    const mid = min + (max - min) / 2
+    assert(
+        actualMin < mid && mid < actualMax,
+        `Bounds too broad. ActualMin: ${actualMin}, actualMax: ${actualMax}, min: ${min}, max: ${max}, mid: ${mid}`,
     )
 }
+
+test('climate search pages consistency', async () => {
+    const page1 = await fetchApi({
+        command: 'searchClimate',
+        cityId: 16709, // Copenhagen
+        startIndex: 2,
+        maxItems: 3,
+    })
+    assert.notEqual(page1.items[0].id, 16709)
+
+    const page2 = await fetchApi({
+        command: 'searchClimate',
+        cityId: 16709,
+        startIndex: 5,
+        maxItems: 1,
+    })
+
+    const page12 = await fetchApi({
+        command: 'searchClimate',
+        cityId: 16709,
+        startIndex: 2,
+        maxItems: 4,
+    })
+
+    assert.deepStrictEqual([...page1.items, ...page2.items], page12.items)
+})
 
 test.after(() => void subprocess.kill())
 test.run()
