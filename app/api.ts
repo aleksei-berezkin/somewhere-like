@@ -1,5 +1,5 @@
 export async function fetchApi<Req extends CityRequest>(request: Req): Promise<GetResponseType<Req>> {
-    const req = new Request('http://localhost:3000', {
+    const req = new Request('http://localhost:3001', {
         method: 'POST',
         body: JSON.stringify(request),
     })

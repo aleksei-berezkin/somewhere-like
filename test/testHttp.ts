@@ -1,7 +1,7 @@
 import assert from 'node:assert'
 import { spawn } from 'node:child_process'
 import { test } from 'uvu'
-import { fetchApi } from './api.mts'
+import { fetchApi } from '../app/api.ts'
 
 const subprocess = spawn('cargo', ['run', '-p', 'backend', '--release', '--bin', 'http'])
 

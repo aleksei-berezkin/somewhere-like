@@ -14,7 +14,7 @@ use tokio::net::TcpListener;
 /// https://hyper.rs/guides/1/server/hello-world/
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3001));
 
     let listener = TcpListener::bind(addr).await?;
 
@@ -68,5 +68,7 @@ fn bad_req_resp(msg: String) -> Response<Full<Bytes>> {
 }
 
 fn ok_resp(str: String) -> Response<Full<Bytes>> {
-    Response::new(Full::new(Bytes::from(str)))
+    let mut resp =Response::new(Full::new(Bytes::from(str)));
+    resp.headers_mut().insert("Access-Control-Allow-Origin", "*".parse().unwrap());
+    resp
 }

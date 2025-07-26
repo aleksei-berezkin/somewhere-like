@@ -11,12 +11,13 @@
     "prep@impl": "cargo run -p preprocessing",
     "test": "npm run test@rust && npm run test@http",
     "test@rust": "cargo test",
-    "test@http": "node test/testHttp.mts",
-    "dev": "next dev",
+    "test@http": "node test/testHttp.ts",
+    "dev": "concurrently 'npm run back@http' 'next dev'",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
+  "type": "module",
   "keywords": [
     "world",
     "cities",
@@ -27,6 +28,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^24.0.14",
+    "concurrently": "^9.2.0",
     "eslint": "9.31.0",
     "eslint-config-next": "15.4.3",
     "typescript": "^5.8.3",
