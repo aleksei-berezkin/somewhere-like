@@ -27,11 +27,13 @@ type State =
   | { name: 'delay' } & WithQuery
   | { name: 'fetch' } & WithQuery
   | { name: 'done', results: CitySearchResponseItem[] } & WithQuery
+  | { name: 'failed' } & WithQuery
 
 type Action =
   | { name: 'changedQuery', } & WithQuery
   | { name: 'delayFinished' } & WithQuery
   | { name: 'fetchFinished', results: CitySearchResponseItem[] } & WithQuery
+  | { name: 'fetchFailed' } & WithQuery
 
 type WithQuery = {
   query: string
@@ -53,6 +55,10 @@ function reducer(state: State, action: Action): State {
 
   if (action.name === 'fetchFinished' && state.name === 'fetch' && action.query === state.query) {
     return { name: 'done', query: state.query, results: action.results }
+  }
+
+  if (action.name === 'fetchFailed' && state.name === 'fetch' && action.query === state.query) {
+    return { name: 'failed', query: state.query }
   }
 
   return state
@@ -80,17 +86,24 @@ function SearchResultList(p: { query: string }) {
         maxItems: 10,
       }).then(response => {
         dispatch({ name: 'fetchFinished', query: state.query, results: response.items })
+      }).catch(() => {
+        dispatch({ name: 'fetchFailed', query: state.query })
       })
     } else if (state.name === 'done') {
       setDisplayedResults(state.results)
     }
   }, [state])
 
-  return <nav>
+  return <>
+    <nav>
+      {
+        displayedResults.map(item =>
+          <p key={item.id}>{item.name}, {item.adminUnit ?? ''}, {item.country}</p>
+        )
+      }
+    </nav>
     {
-      displayedResults.map(item =>
-        <p key={item.id}>{item.name}, {item.adminUnit ?? ''}, {item.country}</p>
-      )
+      state.name === 'failed' && <p>Server unavailable</p>
     }
-  </nav>
+  </>
 }

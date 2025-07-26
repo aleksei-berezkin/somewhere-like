@@ -1,4 +1,11 @@
 export async function fetchApi<Req extends CityRequest>(request: Req): Promise<GetResponseType<Req>> {
+    return Promise.race([
+        fetchApiImpl(request),
+        new Promise<GetResponseType<Req>>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000)),
+    ])
+}
+
+async function fetchApiImpl<Req extends CityRequest>(request: Req): Promise<GetResponseType<Req>> {
     const req = new Request('http://localhost:3001', {
         method: 'POST',
         body: JSON.stringify(request),
