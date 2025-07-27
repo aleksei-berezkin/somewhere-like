@@ -8,19 +8,19 @@ const resultsId = 'search-results'
 export function SearchCity() {
   const [query, setQuery] = useState('')
 
-  return <>
+  return <div className='search-city'>
     <form>
       <input
         name='query'
         type='text'
-        placeholder='City name'
+        placeholder='City'
         value={query}
         onChange={e => setQuery(e.target.value)}
         aria-controls={resultsId}
       />
     </form>
     <SearchResultList query={query} />
-  </>
+  </div>
 }
 
 type State = 
